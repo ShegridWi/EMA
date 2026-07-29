@@ -63,7 +63,11 @@ export function PromptModal({
     <dialog
       ref={dialogRef}
       onCancel={() => onCancel()}
-      className="w-full max-w-sm rounded-md border border-zinc-300 bg-white p-0 text-zinc-900 backdrop:bg-black/50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+      // Native <dialog> centers itself via the UA stylesheet's
+      // `margin: auto`, but Tailwind's preflight reset zeroes out margin
+      // on every element first — so it has to be re-applied explicitly
+      // here instead of relying on the browser default.
+      className="fixed top-1/2 left-1/2 m-0 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-md border border-zinc-300 bg-white p-0 text-zinc-900 backdrop:bg-black/50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-4">
         <div className="flex flex-col gap-1">
