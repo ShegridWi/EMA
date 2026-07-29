@@ -99,10 +99,17 @@ case in this app.
   `toasts` array triggers the exit animation automatically, no manual
   "leaving" state needed, unlike a plain CSS approach).
 
-- **Hover/focus states**: every existing `hover:bg-muted`,
-  `hover:opacity-100`, etc. should be paired with `transition-colors
-  duration-200 ease-in-out` (or `transition-opacity`) — plain Tailwind,
-  these exist today but currently snap.
+- **Hover/focus states — mandatory on every interactive element**: every
+  clickable element (button, action link, nav item, table row action)
+  must have a hover state, and that hover state must be paired with
+  `transition-colors duration-200 ease-in-out` (or `transition-opacity`)
+  — plain Tailwind, no `framer-motion` needed. This isn't limited to
+  elements that already have a `hover:` class today (those currently snap
+  instead of easing) — it applies to every interactive element touched
+  during the Phase 4 refactor, including ones with no hover treatment at
+  all yet. See [[tailwind-conventions]] for the paired `cursor-pointer`
+  rule — the two go together: no clickable element should be missing
+  either.
 
 - **Loading/pending states**: pair the existing `disabled` + label-swap
   pattern (e.g. `sale-form.tsx`'s `pending ? t("submitting") : t("submit")`)

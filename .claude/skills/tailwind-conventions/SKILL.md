@@ -118,6 +118,43 @@ component — three similar lines beats a premature abstraction. Extract
 only what `DESIGN_REVIEW.md` already identified as repeated across files,
 not speculatively.
 
+## Interactive elements: always `cursor-pointer` + a hover state
+
+**Hard rule**: every clickable element — every `<button>`, every
+custom clickable `<div>`/`<span>` with an `onClick`, every element acting
+as an action trigger — must have `cursor-pointer` in its className, and
+must have a hover state with a transition (see [[motion-and-transitions]]
+for the exact `transition-colors duration-200 ease-in-out` treatment).
+Native `<a>`/`Link` elements already get a pointer cursor from the
+browser, but **`<button>` does not** — Tailwind's Preflight resets button
+cursor to `default` to match modern browser behavior, so it never comes
+for free and must be added explicitly every time.
+
+A repo-wide grep at the time this rule was added found **zero** uses of
+`cursor-pointer` anywhere — every `<button>` in the app (submit buttons,
+deactivate/delete/reactivate/return/void actions, the theme toggle, the
+search/filter submit buttons, dismiss buttons) currently shows the
+default arrow cursor instead of a pointer. Fix this for every button
+touched during the Phase 4 refactor — don't just fix the ones that
+happen to get restyled for other reasons, since a mix of pointer/
+non-pointer buttons across the app reads as a bug to users, not a style
+choice.
+
+```tsx
+// Bad — no pointer cursor (browser/Preflight default is `cursor: default`
+// for <button>), no hover feedback
+<button className="rounded-md bg-primary px-4 py-2 text-primary-foreground">
+
+// Good
+<button className="cursor-pointer rounded-md bg-primary px-4 py-2 text-primary-foreground transition-colors duration-200 ease-in-out hover:bg-primary/90">
+```
+
+Once the shared `Button` primitive from the previous section exists, bake
+`cursor-pointer` and the hover transition into it once so every caller
+gets both automatically — this rule matters most for any interactive
+element that *isn't* going through that primitive (icon-only buttons,
+one-off clickable elements).
+
 ## Icons and motion
 
 Covered in their own skills — see [[icon-system]] and
