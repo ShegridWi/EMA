@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { Role, City } from "@/app/generated/prisma/enums";
 import { DeactivateUserButton } from "@/components/users/deactivate-user-button";
 import { ReactivateUserButton } from "@/components/users/reactivate-user-button";
+import { Pencil } from "lucide-react";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -168,8 +169,9 @@ export default async function UsersPage({ params, searchParams }: Props) {
                     <div className="flex gap-3">
                       <Link
                         href={`/users/${user.id}/edit`}
-                        className="underline"
+                        className="inline-flex items-center gap-1 underline"
                       >
+                        <Pencil className="size-4" />
                         {tCommon("edit")}
                       </Link>
                       {user.active ? (

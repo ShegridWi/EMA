@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { returnSaleAction, voidSaleAction } from "@/lib/actions/sales";
 import { PromptModal } from "@/components/ui/prompt-modal";
 import { useToast } from "@/components/ui/toast-provider";
+import { Ban, RotateCcw } from "lucide-react";
 
 type PendingAction = "return" | "void" | null;
 
@@ -61,16 +62,18 @@ export function SaleActions({ saleId }: { saleId: string }) {
         type="button"
         onClick={() => setPendingAction("return")}
         disabled={isPending}
-        className="text-sm underline disabled:opacity-50"
+        className="inline-flex items-center gap-1 text-sm underline disabled:opacity-50"
       >
+        <RotateCcw className="size-4" />
         {t("markAsReturn")}
       </button>
       <button
         type="button"
         onClick={() => setPendingAction("void")}
         disabled={isPending}
-        className="text-sm text-red-600 underline disabled:opacity-50 dark:text-red-400"
+        className="inline-flex items-center gap-1 text-sm text-red-600 underline disabled:opacity-50 dark:text-red-400"
       >
+        <Ban className="size-4" />
         {t("voidSale")}
       </button>
 

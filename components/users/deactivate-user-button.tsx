@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { deactivateUserAction } from "@/lib/actions/users";
 import { useToast } from "@/components/ui/toast-provider";
 import { PromptModal } from "@/components/ui/prompt-modal";
+import { PowerOff } from "lucide-react";
 
 // `disabled` is passed by the caller (app/[locale]/(dashboard)/users/page.tsx)
 // for the admin's own row — the Server Action rejects self-deactivation too
@@ -57,8 +58,9 @@ export function DeactivateUserButton({
         type="button"
         onClick={() => setOpen(true)}
         disabled={isPending}
-        className="text-red-600 underline disabled:opacity-50 dark:text-red-400"
+        className="inline-flex items-center gap-1 text-red-600 underline disabled:opacity-50 dark:text-red-400"
       >
+        <PowerOff className="size-4" />
         {t("deactivate")}
       </button>
 

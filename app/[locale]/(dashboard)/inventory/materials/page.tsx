@@ -7,6 +7,7 @@ import { DeactivateMaterialButton } from "@/components/materials/deactivate-mate
 import { ReactivateMaterialButton } from "@/components/materials/reactivate-material-button";
 import { formatCurrency } from "@/lib/currency";
 import { zonedTimeToUtc } from "@/lib/timezone";
+import { History, Pencil } from "lucide-react";
 
 type Props = {
   searchParams: Promise<{ q?: string; from?: string; to?: string; tab?: string }>;
@@ -176,16 +177,18 @@ export default async function MaterialsPage({ searchParams }: Props) {
                     <div className="flex gap-3">
                       <Link
                         href={`/inventory/materials/${material.id}/history`}
-                        className="underline"
+                        className="inline-flex items-center gap-1 underline"
                       >
+                        <History className="size-4" />
                         {tHistory("linkLabel")}
                       </Link>
                       {isAdmin && (
                         <>
                           <Link
                             href={`/inventory/materials/${material.id}/edit`}
-                            className="underline"
+                            className="inline-flex items-center gap-1 underline"
                           >
+                            <Pencil className="size-4" />
                             {tCommon("edit")}
                           </Link>
                           {material.active ? (

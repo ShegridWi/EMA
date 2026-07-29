@@ -7,6 +7,7 @@ import { createSaleAction } from "@/lib/actions/sales";
 import { useToast } from "@/components/ui/toast-provider";
 import { City, SaleType, PaymentMethod } from "@/app/generated/prisma/enums";
 import type { SerializedProduct } from "@/lib/inventory";
+import { Loader2, Search } from "lucide-react";
 
 type ActionResult =
   | { success: true; data: unknown }
@@ -111,13 +112,16 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
         <label htmlFor="productId" className="text-sm font-medium">
           {t("product")}
         </label>
-        <input
-          type="search"
-          value={productSearch}
-          onChange={(e) => setProductSearch(e.target.value)}
-          placeholder={t("searchProductPlaceholder")}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-        />
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500 dark:text-zinc-400" />
+          <input
+            type="search"
+            value={productSearch}
+            onChange={(e) => setProductSearch(e.target.value)}
+            placeholder={t("searchProductPlaceholder")}
+            className="w-full rounded-md border border-zinc-300 bg-transparent py-2 pl-9 pr-3 text-sm dark:border-zinc-700"
+          />
+        </div>
 
         {/*
           Quick-pick results list under the search box. Clicking a row
@@ -365,8 +369,9 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-zinc-900 px-4 py-2 font-medium text-zinc-50 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
+        className="inline-flex items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-zinc-50 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
       >
+        {pending && <Loader2 className="size-4 animate-spin" />}
         {pending ? t("submitting") : t("submit")}
       </button>
     </form>

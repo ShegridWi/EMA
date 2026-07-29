@@ -106,5 +106,11 @@ Two roles: **Admin** and **Seller**. See the full matrix in
   bypassing that layer.
 - Any feature that touches money (sales, partial payments, balances) must
   have tests before merging.
+- All UI colors are centralized in the semantic tokens defined once in
+  `app/globals.css`'s `@theme` block — never a hardcoded hex or a raw
+  Tailwind palette class (`zinc-300`, `#ff715b`) inside a component, and
+  never a second color source (inline `style`, another `@theme`/CSS
+  variable block, a hex literal in a TS lookup table). See the
+  `tailwind-conventions` and `theming-user-settings` skills.
 - Full conventions (folder structure, Server Actions pattern, i18n setup,
   tooling) are in `.claude/docs/05-nextjs-conventions.md`.

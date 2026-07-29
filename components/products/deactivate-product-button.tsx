@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { deactivateProductAction } from "@/lib/actions/products";
 import { useToast } from "@/components/ui/toast-provider";
 import { PromptModal } from "@/components/ui/prompt-modal";
+import { PowerOff } from "lucide-react";
 
 // Uses PromptModal (components/ui) instead of window.confirm() — no
 // `inputLabel` since deactivating doesn't take a reason (unlike
@@ -37,8 +38,9 @@ export function DeactivateProductButton({ id }: { id: string }) {
         type="button"
         onClick={() => setOpen(true)}
         disabled={isPending}
-        className="text-red-600 underline disabled:opacity-50 dark:text-red-400"
+        className="inline-flex items-center gap-1 text-red-600 underline disabled:opacity-50 dark:text-red-400"
       >
+        <PowerOff className="size-4" />
         {t("deactivate")}
       </button>
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
+import { Moon, Sun } from "lucide-react";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -20,7 +21,7 @@ export function ThemeToggle() {
   if (!mounted) {
     // Avoids a hydration mismatch: the resolved theme is only known
     // client-side (next-themes reads it from localStorage/media query).
-    return <div className="h-8 w-16" aria-hidden />;
+    return <div className="h-8 w-8" aria-hidden />;
   }
 
   const isDark = resolvedTheme === "dark";
@@ -30,9 +31,9 @@ export function ThemeToggle() {
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={t("toggle")}
-      className="rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700"
+      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-300 dark:border-zinc-700"
     >
-      {isDark ? t("light") : t("dark")}
+      {isDark ? <Sun className="size-5" /> : <Moon className="size-5" />}
     </button>
   );
 }

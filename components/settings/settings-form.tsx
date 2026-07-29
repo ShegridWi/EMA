@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/toast-provider";
 import { Theme, Locale } from "@/app/generated/prisma/enums";
 import { LOCALE_TO_ROUTE } from "@/lib/locale";
 import type { UserSettings } from "@/app/generated/prisma/client";
+import { Loader2 } from "lucide-react";
 
 type ActionResult =
   | { success: true; data: unknown }
@@ -139,8 +140,9 @@ export function SettingsForm({ settings }: { settings: UserSettings }) {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-zinc-900 px-4 py-2 font-medium text-zinc-50 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-zinc-50 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
         >
+          {pending && <Loader2 className="size-4 animate-spin" />}
           {tCommon("save")}
         </button>
       </div>

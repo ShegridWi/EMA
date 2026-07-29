@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useTranslations } from "next-intl";
+import { X } from "lucide-react";
 
 export type ToastType = "success" | "error" | "warning";
 
@@ -109,7 +110,7 @@ function ToastItem({
         aria-label={t("dismiss")}
         className="leading-none opacity-70 hover:opacity-100"
       >
-        ×
+        <X className="size-4" />
       </button>
     </div>
   );
