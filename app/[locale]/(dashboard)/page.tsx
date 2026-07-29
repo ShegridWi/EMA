@@ -4,11 +4,8 @@ import { auth } from "@/lib/auth";
 export default async function DashboardHomePage() {
   const session = await auth();
   const t = await getTranslations("Dashboard");
-
-  const roleLabel =
-    session?.user.role === "ADMIN" ? t("roleAdmin") : t("roleSeller");
-  const cityLabel =
-    session?.user.city === "LA_PAZ" ? t("cityLaPaz") : t("citySantaCruz");
+  const tRole = await getTranslations("Role");
+  const tCity = await getTranslations("City");
 
   return (
     <div>
@@ -16,7 +13,8 @@ export default async function DashboardHomePage() {
         {t("welcome", { name: session?.user.name ?? "" })}
       </h1>
       <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        {roleLabel} · {cityLabel}
+        {session?.user.role && tRole(session.user.role)} ·{" "}
+        {session?.user.city && tCity(session.user.city)}
       </p>
     </div>
   );

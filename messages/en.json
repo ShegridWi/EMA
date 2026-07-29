@@ -1,6 +1,18 @@
 {
   "Common": {
-    "appName": "EMA"
+    "appName": "EMA",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create",
+    "confirmDelete": "Are you sure you want to delete this record?",
+    "empty": "No records yet.",
+    "search": "Search",
+    "errorForbidden": "You don't have permission to perform this action.",
+    "errorValidation": "Please check the form fields.",
+    "errorGeneric": "Something went wrong. Please try again."
   },
   "Login": {
     "title": "Sign in",
@@ -27,10 +39,35 @@
     "dark": "Dark"
   },
   "Dashboard": {
-    "welcome": "Hi, {name}",
-    "roleAdmin": "Admin",
-    "roleSeller": "Seller",
-    "cityLaPaz": "La Paz",
-    "citySantaCruz": "Santa Cruz"
+    "welcome": "Hi, {name}"
+  },
+  "Role": {
+    "ADMIN": "Admin",
+    "SELLER": "Seller"
+  },
+  "City": {
+    "LA_PAZ": "La Paz",
+    "SANTA_CRUZ": "Santa Cruz"
+  },
+  "Unit": {
+    "METERS": "Meters",
+    "UNITS": "Units",
+    "ROLLS": "Rolls"
+  },
+  "Materials": {
+    "title": "Materials",
+    "addNew": "New material",
+    "editTitle": "Edit material",
+    "newTitle": "New material",
+    "searchPlaceholder": "Search by type, subtype or color...",
+    "materialType": "Material",
+    "color": "Color",
+    "type": "Type",
+    "quantity": "Quantity",
+    "unit": "Unit",
+    "city": "City",
+    "purchasePrice": "Purchase price",
+    "colorOptional": "Color (optional)",
+    "backToList": "Back to list"
   }
 }
