@@ -127,6 +127,34 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 - Data fetching for read-only pages happens directly in Server Components
   via Prisma — no need for a client-side fetch layer for simple lists.
 
+## Reusable UI primitives (`components/ui/`)
+
+Generic, presentation-only components live in `components/ui/` and take
+all copy as props (no `next-intl` calls inside them) — the caller passes
+translated strings, keeping these components decoupled from any one
+feature.
+
+- **`PromptModal`** (`components/ui/prompt-modal.tsx`): a "confirm this
+  action, optionally explain why" dialog built on the native `<dialog>`
+  element (no UI library dependency, per CLAUDE.md section 1). Use this
+  instead of `window.confirm()`/`window.prompt()` whenever a mutation
+  needs a confirmation step with an optional free-text detail — e.g. the
+  sale return/void reason (`components/sales/sale-actions.tsx`). It's
+  controlled (`open` prop owned by the caller) and only handles the
+  dialog UI; the caller decides what to do with the confirmed value.
+- **`ThemeToggle`** / **`ThemeProvider`** (`components/ui/theme-*.tsx`):
+  see the Theme section below.
+
+## Currency (`lib/currency.ts`)
+
+The business operates in **Bolivianos (BOB)** by default — see the
+resolved assumption in `04-scope-mvp.md`. `lib/currency.ts` exports
+`formatCurrency(amount, currency = "BOB")`, used in every list view that
+displays a money amount (Materials, Products, Sales) to render it as
+`Bs 150.00`. No form collects a currency choice yet; adding one (e.g. for
+USD-denominated sales) would need a schema column, not just a formatting
+change — don't assume `formatCurrency`'s default covers that case.
+
 ## Server Actions (the only way to mutate data)
 
 Every Server Action follows this shape, in this order:
