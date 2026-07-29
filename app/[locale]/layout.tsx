@@ -4,6 +4,7 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { ThemeProvider } from "@/components/ui/theme-provider";
+import { auth } from "@/lib/auth";
 import "../globals.css";
 
 const geistSans = Geist({
@@ -36,6 +37,15 @@ export default async function LocaleLayout({ children, params }: Props) {
     notFound();
   }
 
+  // Seeds the *initial* theme from the signed-in user's saved preference
+  // (01-business-rules.md section 8) instead of always starting from
+  // "system" — next-themes still lets a manual toggle override it for
+  // that browser afterward via its own localStorage persistence (see
+  // components/ui/theme-toggle.tsx), this only changes the first-paint
+  // default. No session (e.g. the login page) falls back to "system".
+  const session = await auth();
+  const defaultTheme = session?.user.settings.theme.toLowerCase() ?? "system";
+
   return (
     <html
       lang={locale}
@@ -44,7 +54,7 @@ export default async function LocaleLayout({ children, params }: Props) {
     >
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider locale={locale}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ThemeProvider attribute="class" defaultTheme={defaultTheme} enableSystem>
             {children}
           </ThemeProvider>
         </NextIntlClientProvider>

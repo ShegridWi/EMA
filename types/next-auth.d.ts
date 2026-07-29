@@ -1,10 +1,23 @@
 import type { DefaultSession } from "next-auth";
-import type { Role, City } from "@/app/generated/prisma/enums";
+import type { Role, City, Theme, Locale } from "@/app/generated/prisma/enums";
+
+// Cached at sign-in time only (see the jwt() callback in lib/auth.ts) —
+// a settings change made later via /settings is reflected there
+// immediately (it re-reads the DB directly) but won't update this
+// session copy until the next login. That's an accepted trade-off: the
+// business ask was "apply the saved theme/language at login", not
+// "live-sync every open session" (01-business-rules.md section 8).
+type SessionUserSettings = {
+  timezone: string;
+  theme: Theme;
+  locale: Locale;
+};
 
 declare module "next-auth" {
   interface User {
     role: Role;
     city: City;
+    settings: SessionUserSettings;
   }
 
   interface Session {
@@ -12,6 +25,7 @@ declare module "next-auth" {
       id: string;
       role: Role;
       city: City;
+      settings: SessionUserSettings;
     } & DefaultSession["user"];
   }
 }

@@ -22,6 +22,16 @@ enum City {
   SANTA_CRUZ
 }
 
+enum Theme {
+  LIGHT
+  DARK
+}
+
+enum Locale {
+  ES
+  EN
+}
+
 enum Unit {
   METERS
   UNITS
@@ -79,6 +89,7 @@ enum MovementAction {
   UPDATE_USER
   DELETE_USER
   REACTIVATE_USER
+  UPDATE_SETTINGS
 }
 
 model User {
@@ -97,6 +108,25 @@ model User {
   products     Product[]
   sales        Sale[]
   movementLogs MovementLog[]
+  settings     UserSettings?
+}
+
+// Per-user preferences (phase 9) — created on demand with defaults the
+// first time they're read (see getOrCreateUserSettings in
+// lib/user-settings.ts), not required at signup, so existing users from
+// before this phase don't need a data migration.
+model UserSettings {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  // IANA identifier (e.g. "America/La_Paz") — not an enum, the picker
+  // uses Intl.supportedValuesOf("timeZone") instead of a hand-maintained
+  // list (05-nextjs-conventions.md "Timezone handling").
+  timezone  String   @default("America/La_Paz")
+  theme     Theme    @default(LIGHT)
+  locale    Locale   @default(ES)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Material {
