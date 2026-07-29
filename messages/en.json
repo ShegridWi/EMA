@@ -41,7 +41,9 @@
     "users": "Users",
     "movementLog": "Movement log",
     "settings": "Settings",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "Theme": {
     "toggle": "Toggle theme",

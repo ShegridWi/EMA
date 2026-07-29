@@ -8,6 +8,13 @@ import { useToast } from "@/components/ui/toast-provider";
 import { City, SaleType, PaymentMethod } from "@/app/generated/prisma/enums";
 import type { SerializedProduct } from "@/lib/inventory";
 import { Loader2, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { FormField } from "@/components/ui/form-field";
+import { Alert } from "@/components/ui/alert";
+import { MutedText } from "@/components/ui/muted-text";
 
 type ActionResult =
   | { success: true; data: unknown }
@@ -97,29 +104,22 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
   }, [state, router, showToast]);
 
   if (products.length === 0) {
-    return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        {tCommon("empty")}
-      </p>
-    );
+    return <MutedText>{tCommon("empty")}</MutedText>;
   }
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
   return (
     <form action={formAction} className="flex max-w-md flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="productId" className="text-sm font-medium">
-          {t("product")}
-        </label>
+      <FormField label={t("product")} htmlFor="productId">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500 dark:text-zinc-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
             value={productSearch}
             onChange={(e) => setProductSearch(e.target.value)}
             placeholder={t("searchProductPlaceholder")}
-            className="w-full rounded-md border border-zinc-300 bg-transparent py-2 pl-9 pr-3 text-sm dark:border-zinc-700"
+            className="w-full rounded-md border border-border bg-background py-2 pr-3 pl-9 text-sm text-foreground transition-colors duration-200 ease-in-out placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -131,13 +131,13 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
           whether the product is a Set or a Unit, since that isn't
           obvious from the description alone.
         */}
-        <div className="max-h-48 overflow-y-auto rounded-md border border-zinc-300 dark:border-zinc-700">
+        <div className="max-h-48 overflow-y-auto rounded-md border border-border">
           {filteredProducts.length === 0 ? (
-            <p className="p-2 text-xs text-zinc-500 dark:text-zinc-400">
+            <MutedText className="p-2 text-xs">
               {t("searchResultsEmpty")}
-            </p>
+            </MutedText>
           ) : (
-            <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            <ul className="divide-y divide-border">
               {filteredProducts.map((product) => {
                 const isSelected = product.id === effectiveProductId;
                 return (
@@ -146,14 +146,14 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
                       type="button"
                       onClick={() => setProductId(product.id)}
                       aria-pressed={isSelected}
-                      className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900 ${
-                        isSelected ? "bg-zinc-100 dark:bg-zinc-900" : ""
+                      className={`flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors duration-200 ease-in-out hover:bg-muted ${
+                        isSelected ? "bg-muted" : ""
                       }`}
                     >
                       <span>
                         {product.description} ({product.color}, {product.size})
                       </span>
-                      <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+                      <span className="shrink-0 text-xs text-muted-foreground">
                         {product.kind === "SET" ? t("kindSet") : t("kindUnit")}
                       </span>
                     </button>
@@ -164,13 +164,12 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
           )}
         </div>
 
-        <select
+        <Select
           id="productId"
           name="productId"
           required
           value={effectiveProductId}
           onChange={(e) => setProductId(e.target.value)}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
         >
           {filteredProducts.map((product) => (
             <option key={product.id} value={product.id}>
@@ -178,47 +177,41 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
               {product.kind === "SET" ? t("kindSet") : t("kindUnit")}
             </option>
           ))}
-        </select>
+        </Select>
         {selectedProduct && (
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <MutedText className="text-xs">
             {selectedProduct.kind === "UNIT"
               ? t("unitAvailable", { count: selectedProduct.quantity })
               : t("setNoStockShown")}
-          </p>
+          </MutedText>
         )}
-      </div>
+      </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="quantity" className="text-sm font-medium">
-          {t("quantity")}
-        </label>
-        <input
-          id="quantity"
-          name="quantity"
-          type="number"
-          step="1"
-          min="1"
-          required
-          defaultValue={1}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
-      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormField label={t("quantity")} htmlFor="quantity">
+          <Input
+            id="quantity"
+            name="quantity"
+            type="number"
+            step="1"
+            min="1"
+            required
+            defaultValue={1}
+          />
+        </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="unitPrice" className="text-sm font-medium">
-          {t("unitPrice")}
-        </label>
-        <input
-          key={selectedProduct?.id}
-          id="unitPrice"
-          name="unitPrice"
-          type="number"
-          step="0.01"
-          min="0"
-          required
-          defaultValue={selectedProduct?.price}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
+        <FormField label={t("unitPrice")} htmlFor="unitPrice">
+          <Input
+            key={selectedProduct?.id}
+            id="unitPrice"
+            name="unitPrice"
+            type="number"
+            step="0.01"
+            min="0"
+            required
+            defaultValue={selectedProduct?.price}
+          />
+        </FormField>
       </div>
 
       <input
@@ -226,76 +219,62 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
         name="city"
         value={selectedProduct?.city ?? City.LA_PAZ}
       />
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        {t("city")}:{" "}
-        {selectedProduct ? tCity(selectedProduct.city) : "—"}
-      </p>
+      <MutedText className="text-xs">
+        {t("city")}: {selectedProduct ? tCity(selectedProduct.city) : "—"}
+      </MutedText>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="saleDate" className="text-sm font-medium">
-          {t("saleDate")}
-        </label>
-        <input
+      <FormField label={t("saleDate")} htmlFor="saleDate">
+        <Input
           id="saleDate"
           name="saleDate"
           type="date"
           required
           defaultValue={todayStr}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
         />
-      </div>
+      </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="saleType" className="text-sm font-medium">
-          {t("saleType")}
-        </label>
-        <select
-          id="saleType"
-          name="saleType"
-          required
-          value={saleType}
-          onChange={(e) => setSaleType(e.target.value)}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        >
-          {Object.values(SaleType).map((type) => (
-            <option key={type} value={type}>
-              {tSaleType(type)}
-            </option>
-          ))}
-        </select>
-      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormField label={t("saleType")} htmlFor="saleType">
+          <Select
+            id="saleType"
+            name="saleType"
+            required
+            value={saleType}
+            onChange={(e) => setSaleType(e.target.value)}
+          >
+            {Object.values(SaleType).map((type) => (
+              <option key={type} value={type}>
+                {tSaleType(type)}
+              </option>
+            ))}
+          </Select>
+        </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="paymentMethod" className="text-sm font-medium">
-          {t("paymentMethod")}
-        </label>
-        <select
-          id="paymentMethod"
-          name="paymentMethod"
-          required
-          value={paymentMethod}
-          onChange={(e) => setPaymentMethod(e.target.value)}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        >
-          {Object.values(PaymentMethod).map((method) => (
-            <option key={method} value={method}>
-              {tPaymentMethod(method)}
-            </option>
-          ))}
-        </select>
+        <FormField label={t("paymentMethod")} htmlFor="paymentMethod">
+          <Select
+            id="paymentMethod"
+            name="paymentMethod"
+            required
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+          >
+            {Object.values(PaymentMethod).map((method) => (
+              <option key={method} value={method}>
+                {tPaymentMethod(method)}
+              </option>
+            ))}
+          </Select>
+        </FormField>
       </div>
 
       {paymentMethod === PaymentMethod.QR && (
-        <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-zinc-300 text-center text-xs text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+        <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border text-center text-xs text-muted-foreground">
           {t("qrPlaceholder")}
         </div>
       )}
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="amountPaid" className="text-sm font-medium">
-          {t("amountPaid")}
-        </label>
-        <input
+      <FormField label={t("amountPaid")} htmlFor="amountPaid">
+        <Input
           id="amountPaid"
           name="amountPaid"
           type="number"
@@ -303,77 +282,43 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
           min="0"
           required
           defaultValue={0}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
         />
-      </div>
+      </FormField>
 
       {saleType !== SaleType.CASH && (
-        <div className="flex flex-col gap-1">
-          <label htmlFor="deliveryDate" className="text-sm font-medium">
-            {t("expectedDate")}
-          </label>
-          <input
-            id="deliveryDate"
-            name="deliveryDate"
-            type="date"
-            required
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-          />
-        </div>
+        <FormField label={t("expectedDate")} htmlFor="deliveryDate">
+          <Input id="deliveryDate" name="deliveryDate" type="date" required />
+        </FormField>
       )}
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="customerName" className="text-sm font-medium">
-          {t("customerName")}
-        </label>
-        <input
-          id="customerName"
-          name="customerName"
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormField label={t("customerName")} htmlFor="customerName">
+          <Input id="customerName" name="customerName" />
+        </FormField>
+
+        <FormField label={t("customerPhone")} htmlFor="customerPhone">
+          <Input id="customerPhone" name="customerPhone" />
+        </FormField>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="customerPhone" className="text-sm font-medium">
-          {t("customerPhone")}
-        </label>
-        <input
-          id="customerPhone"
-          name="customerPhone"
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="notes" className="text-sm font-medium">
-          {t("notes")}
-        </label>
-        <textarea
-          id="notes"
-          name="notes"
-          rows={3}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
-      </div>
+      <FormField label={t("notes")} htmlFor="notes">
+        <Textarea id="notes" name="notes" rows={3} />
+      </FormField>
 
       {state?.success === false && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <Alert>
           {state.error === "Forbidden"
             ? tCommon("errorForbidden")
             : state.error === "insufficient_stock"
               ? t("errorInsufficientStock")
               : tCommon("errorValidation")}
-        </p>
+        </Alert>
       )}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="inline-flex items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-zinc-50 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
-      >
+      <Button type="submit" disabled={pending}>
         {pending && <Loader2 className="size-4 animate-spin" />}
         {pending ? t("submitting") : t("submit")}
-      </button>
+      </Button>
     </form>
   );
 }

@@ -84,7 +84,9 @@ Highest-value initial targets, in priority order:
    label (keep the `aria-label` for accessibility).
 3. Table row actions (materials/products/users list pages) — `Pencil`
    (edit), `Trash2` (delete), `History` (history link), `Power`/
-   `PowerOff` (deactivate/reactivate) instead of underlined words.
+   `PowerOff` (deactivate/reactivate) instead of underlined words. See
+   the `IconButton` pattern below — this is what table row actions use
+   now.
 4. `components/dashboard-nav.tsx` — one icon per nav link.
 5. Form affordances — `Search` in the sale form's product search input,
    loading spinner (`Loader2` with `animate-spin`, see
@@ -93,3 +95,56 @@ Highest-value initial targets, in priority order:
 Always keep an accompanying text label or `aria-label` alongside an icon —
 icons here are meant to improve scannability, not to replace meaning for
 screen reader users.
+
+## `IconButton` / `IconButtonLink`: large square icon-only actions with a tooltip
+
+Client-requested pattern for table row actions (edit/history/deactivate/
+reactivate/delete, sale return/void): a large square bordered button
+holding only the icon, with the label shown as a hover/focus tooltip
+instead of inline text. Use the `components/ui/icon-button.tsx`
+primitives (`IconButton` for a native `<button>` trigger — modals,
+pending actions; `IconButtonLink` for navigation — edit/history links)
+rather than hand-rolling this pattern:
+
+```tsx
+<IconButtonLink
+  href={`/inventory/materials/${material.id}/edit`}
+  icon={<Pencil className="size-5" />}
+  label={tCommon("edit")}
+/>
+<IconButton
+  variant="danger"
+  icon={<Trash2 className="size-5" />}
+  label={tCommon("delete")}
+  onClick={() => setOpen(true)}
+  disabled={isPending}
+/>
+```
+
+- Icon size is `size-5` (per the table above), inside a `size-10` square
+  box — bigger and more touch-friendly than the plain inline icon+text
+  links these replaced.
+- `label` is **required** and becomes the button's `aria-label` — the
+  visible text is gone, so this is the only accessible name; never pass
+  an icon-only `IconButton` without one.
+- The tooltip is the browser-**native `title` attribute** — not a custom
+  absolutely-positioned span. A first attempt used a CSS
+  `group-hover`/`group-focus-visible` tooltip, but these buttons live
+  inside `overflow-x-auto` table wrappers ([[tailwind-conventions]]'s
+  table pattern), and an ancestor with `overflow-x` set to anything but
+  `visible` gets its `overflow-y` computed as `auto` too (a standing CSS
+  overflow-module rule, not a bug) — so the custom tooltip got clipped
+  for the last row, and *showing* it made the wrapper think content had
+  overflowed vertically and spawn an unnecessary scrollbar. `title` is
+  rendered by the browser chrome, not the DOM, so neither problem
+  applies. Don't reintroduce a custom DOM tooltip for anything living
+  inside a scroll-wrapped table without solving the clipping problem
+  first (e.g. a portal to `<body>`, or `position: fixed` positioned via
+  JS) — `title` is the deliberate simple choice here, not an oversight.
+- `variant="danger"` (red-tinted border/icon) is for destructive actions
+  (delete, deactivate, void) — matches the `Button` primitive's
+  `link-danger` variant it replaced in these spots.
+- Row containers should be `flex items-center gap-2` (not the older
+  `gap-3` used for the icon+text link pattern) — the square buttons
+  supply their own visual weight/spacing, `gap-2` keeps them from
+  crowding or drifting apart ("well aligned" per the client's ask).

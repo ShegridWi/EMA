@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { deactivateUserAction } from "@/lib/actions/users";
 import { useToast } from "@/components/ui/toast-provider";
 import { PromptModal } from "@/components/ui/prompt-modal";
+import { IconButton } from "@/components/ui/icon-button";
 import { PowerOff } from "lucide-react";
 
 // `disabled` is passed by the caller (app/[locale]/(dashboard)/users/page.tsx)
@@ -54,15 +55,13 @@ export function DeactivateUserButton({
 
   return (
     <>
-      <button
-        type="button"
+      <IconButton
+        variant="danger"
+        icon={<PowerOff className="size-5" />}
+        label={t("deactivate")}
         onClick={() => setOpen(true)}
         disabled={isPending}
-        className="inline-flex items-center gap-1 text-red-600 underline disabled:opacity-50 dark:text-red-400"
-      >
-        <PowerOff className="size-4" />
-        {t("deactivate")}
-      </button>
+      />
 
       <PromptModal
         open={open}

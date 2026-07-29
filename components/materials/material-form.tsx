@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { Link, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import {
   createMaterialAction,
   updateMaterialAction,
@@ -11,6 +11,12 @@ import { useToast } from "@/components/ui/toast-provider";
 import { Unit, City } from "@/app/generated/prisma/enums";
 import type { SerializedMaterial } from "@/lib/inventory";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { FormField } from "@/components/ui/form-field";
+import { Alert } from "@/components/ui/alert";
 
 type ActionResult =
   | { success: true; data: unknown }
@@ -81,137 +87,97 @@ export function MaterialForm({
 
   return (
     <form action={formAction} className="flex max-w-md flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="materialType" className="text-sm font-medium">
-          {t("materialType")}
-        </label>
-        <input
+      <FormField label={t("materialType")} htmlFor="materialType">
+        <Input
           id="materialType"
           name="materialType"
           required
           defaultValue={material?.materialType}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
         />
+      </FormField>
+
+      <FormField label={t("type")} htmlFor="type">
+        <Input id="type" name="type" required defaultValue={material?.type} />
+      </FormField>
+
+      <FormField label={t("colorOptional")} htmlFor="color">
+        <Input id="color" name="color" defaultValue={material?.color ?? ""} />
+      </FormField>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormField label={t("quantity")} htmlFor="quantity">
+          <Input
+            id="quantity"
+            name="quantity"
+            type="number"
+            step="0.01"
+            min="0"
+            required
+            defaultValue={material?.quantity}
+          />
+        </FormField>
+
+        <FormField label={t("unit")} htmlFor="unit">
+          <Select
+            id="unit"
+            name="unit"
+            required
+            defaultValue={material?.unit ?? Unit.METERS}
+          >
+            {Object.values(Unit).map((unit) => (
+              <option key={unit} value={unit}>
+                {tUnit(unit)}
+              </option>
+            ))}
+          </Select>
+        </FormField>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="type" className="text-sm font-medium">
-          {t("type")}
-        </label>
-        <input
-          id="type"
-          name="type"
-          required
-          defaultValue={material?.type}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
-      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormField label={t("city")} htmlFor="city">
+          <Select
+            id="city"
+            name="city"
+            required
+            defaultValue={material?.city ?? City.LA_PAZ}
+          >
+            {Object.values(City).map((city) => (
+              <option key={city} value={city}>
+                {tCity(city)}
+              </option>
+            ))}
+          </Select>
+        </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="color" className="text-sm font-medium">
-          {t("colorOptional")}
-        </label>
-        <input
-          id="color"
-          name="color"
-          defaultValue={material?.color ?? ""}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="quantity" className="text-sm font-medium">
-          {t("quantity")}
-        </label>
-        <input
-          id="quantity"
-          name="quantity"
-          type="number"
-          step="0.01"
-          min="0"
-          required
-          defaultValue={material?.quantity}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="unit" className="text-sm font-medium">
-          {t("unit")}
-        </label>
-        <select
-          id="unit"
-          name="unit"
-          required
-          defaultValue={material?.unit ?? Unit.METERS}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        >
-          {Object.values(Unit).map((unit) => (
-            <option key={unit} value={unit}>
-              {tUnit(unit)}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="city" className="text-sm font-medium">
-          {t("city")}
-        </label>
-        <select
-          id="city"
-          name="city"
-          required
-          defaultValue={material?.city ?? City.LA_PAZ}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        >
-          {Object.values(City).map((city) => (
-            <option key={city} value={city}>
-              {tCity(city)}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="purchasePrice" className="text-sm font-medium">
-          {t("purchasePrice")}
-        </label>
-        <input
-          id="purchasePrice"
-          name="purchasePrice"
-          type="number"
-          step="0.01"
-          min="0"
-          required
-          defaultValue={material?.purchasePrice}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
+        <FormField label={t("purchasePrice")} htmlFor="purchasePrice">
+          <Input
+            id="purchasePrice"
+            name="purchasePrice"
+            type="number"
+            step="0.01"
+            min="0"
+            required
+            defaultValue={material?.purchasePrice}
+          />
+        </FormField>
       </div>
 
       {state?.success === false && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <Alert>
           {state.error === "Forbidden"
             ? tCommon("errorForbidden")
             : tCommon("errorValidation")}
-        </p>
+        </Alert>
       )}
 
       <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-zinc-50 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
-        >
+        <Button type="submit" disabled={pending}>
           {pending && <Loader2 className="size-4 animate-spin" />}
           {isEdit ? tCommon("save") : tCommon("create")}
-        </button>
-        <Link
-          href="/inventory/materials"
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
-        >
+        </Button>
+        <ButtonLink href="/inventory/materials" variant="secondary">
           {tCommon("cancel")}
-        </Link>
+        </ButtonLink>
       </div>
     </form>
   );

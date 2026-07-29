@@ -70,8 +70,38 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/*
+ * Global type scale bump (client request: "a bit bigger" throughout the
+ * app). Every Tailwind text/spacing/icon-size utility is rem-based, so
+ * raising the root font-size scales all of them uniformly — this is the
+ * single centralized lever for "bigger everywhere," not a per-component
+ * text-size edit. 106.25% ≈ 17px base (from the 16px default) — a
+ * deliberately modest bump, not a zoom.
+ */
+html {
+  font-size: 106.25%;
+}
+
 body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/*
+ * <input type="date"> renders its calendar icon and popup natively —
+ * outside the DOM, so none of the token/utility system above can style
+ * it directly. `color-scheme` is the standards-based hook browsers
+ * expose for exactly this: it tells the engine which palette to draw
+ * native form-control chrome (the calendar icon + its popup, spin
+ * buttons, etc.) in, so it always matches the app's *current* theme
+ * (UserSettings-driven, via next-themes' `dark` class — not the OS
+ * preference) instead of defaulting to a light icon that's invisible
+ * against a dark field. See .claude/skills/theming-user-settings/SKILL.md.
+ */
+input[type="date"] {
+  color-scheme: light;
+}
+.dark input[type="date"] {
+  color-scheme: dark;
 }

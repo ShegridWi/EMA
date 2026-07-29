@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { reactivateUserAction } from "@/lib/actions/users";
 import { PromptModal } from "@/components/ui/prompt-modal";
 import { useToast } from "@/components/ui/toast-provider";
+import { IconButton } from "@/components/ui/icon-button";
 import { Power } from "lucide-react";
 
 // Uses PromptModal (components/ui) instead of window.confirm() so the
@@ -38,15 +39,12 @@ export function ReactivateUserButton({ id }: { id: string }) {
 
   return (
     <>
-      <button
-        type="button"
+      <IconButton
+        icon={<Power className="size-5" />}
+        label={t("reactivate")}
         onClick={() => setOpen(true)}
         disabled={isPending}
-        className="inline-flex items-center gap-1 text-sm underline disabled:opacity-50"
-      >
-        <Power className="size-4" />
-        {t("reactivate")}
-      </button>
+      />
 
       <PromptModal
         open={open}

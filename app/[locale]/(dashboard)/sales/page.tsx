@@ -7,6 +7,12 @@ import { SaleActions } from "@/components/sales/sale-actions";
 import { formatCurrency } from "@/lib/currency";
 import { zonedTimeToUtc, formatInTimezone } from "@/lib/timezone";
 import { City, SaleType } from "@/app/generated/prisma/enums";
+import { ButtonLink } from "@/components/ui/button-link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { FormField } from "@/components/ui/form-field";
+import { MutedText } from "@/components/ui/muted-text";
 
 type Props = {
   searchParams: Promise<{
@@ -97,33 +103,28 @@ export default async function SalesPage({ searchParams }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold">{t("historyTitle")}</h1>
-        <Link
-          href="/sales/new"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 dark:bg-zinc-50 dark:text-zinc-900"
-        >
-          {t("addNew")}
-        </Link>
+        <ButtonLink href="/sales/new">{t("addNew")}</ButtonLink>
       </div>
 
-      <div className="flex gap-4 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="flex gap-4 border-b border-border">
         <Link
           href={buildHref(filterHrefState)}
-          className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+          className={`border-b-2 px-1 pb-2 text-sm font-medium transition-colors duration-200 ease-in-out ${
             isCancelledTab
-              ? "border-transparent text-zinc-500 dark:text-zinc-400"
-              : "border-zinc-900 dark:border-zinc-50"
+              ? "border-transparent text-muted-foreground hover:text-foreground"
+              : "border-primary"
           }`}
         >
           {t("tabActive")}
         </Link>
         <Link
           href={buildHref(filterHrefState, "cancelled")}
-          className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+          className={`border-b-2 px-1 pb-2 text-sm font-medium transition-colors duration-200 ease-in-out ${
             isCancelledTab
-              ? "border-zinc-900 dark:border-zinc-50"
-              : "border-transparent text-zinc-500 dark:text-zinc-400"
+              ? "border-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           {t("tabCancelled")}
@@ -132,40 +133,28 @@ export default async function SalesPage({ searchParams }: Props) {
 
       <form className="flex flex-wrap items-end gap-2">
         {isCancelledTab && <input type="hidden" name="tab" value="cancelled" />}
-        <input
+        <Input
           type="search"
           name="q"
           defaultValue={q ?? ""}
           placeholder={t("searchPlaceholder")}
-          className="w-full max-w-sm rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+          className="w-full max-w-sm"
         />
-        <div className="flex flex-col gap-1">
-          <label htmlFor="city" className="text-sm font-medium">
-            {t("city")}
-          </label>
-          <select
-            id="city"
-            name="city"
-            defaultValue={cityFilter ?? ""}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          >
+        <FormField label={t("city")} htmlFor="city">
+          <Select id="city" name="city" defaultValue={cityFilter ?? ""}>
             <option value="">{t("cityAll")}</option>
             {Object.values(City).map((value) => (
               <option key={value} value={value}>
                 {tCity(value)}
               </option>
             ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="saleType" className="text-sm font-medium">
-            {t("saleType")}
-          </label>
-          <select
+          </Select>
+        </FormField>
+        <FormField label={t("saleType")} htmlFor="saleType">
+          <Select
             id="saleType"
             name="saleType"
             defaultValue={saleTypeFilter ?? ""}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
           >
             <option value="">{t("saleTypeAll")}</option>
             {Object.values(SaleType).map((value) => (
@@ -173,58 +162,29 @@ export default async function SalesPage({ searchParams }: Props) {
                 {tSaleType(value)}
               </option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </FormField>
         {isAdmin && (
-          <div className="flex flex-col gap-1">
-            <label htmlFor="sellerId" className="text-sm font-medium">
-              {t("seller")}
-            </label>
-            <select
-              id="sellerId"
-              name="sellerId"
-              defaultValue={sellerId ?? ""}
-              className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-            >
+          <FormField label={t("seller")} htmlFor="sellerId">
+            <Select id="sellerId" name="sellerId" defaultValue={sellerId ?? ""}>
               <option value="">{t("sellerAll")}</option>
               {sellers.map((seller) => (
                 <option key={seller.id} value={seller.id}>
                   {seller.name}
                 </option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </FormField>
         )}
-        <div className="flex flex-col gap-1">
-          <label htmlFor="from" className="text-sm font-medium">
-            {t("dateFrom")}
-          </label>
-          <input
-            id="from"
-            name="from"
-            type="date"
-            defaultValue={from ?? ""}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="to" className="text-sm font-medium">
-            {t("dateTo")}
-          </label>
-          <input
-            id="to"
-            name="to"
-            type="date"
-            defaultValue={to ?? ""}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          />
-        </div>
-        <button
-          type="submit"
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
-        >
+        <FormField label={t("dateFrom")} htmlFor="from">
+          <Input id="from" name="from" type="date" defaultValue={from ?? ""} />
+        </FormField>
+        <FormField label={t("dateTo")} htmlFor="to">
+          <Input id="to" name="to" type="date" defaultValue={to ?? ""} />
+        </FormField>
+        <Button type="submit" variant="secondary">
           {tCommon("search")}
-        </button>
+        </Button>
       </form>
 
       {isCancelledTab ? (
@@ -274,18 +234,14 @@ async function ActiveSalesTable({
   const sales = await listSales(filters);
 
   if (sales.length === 0) {
-    return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        {tCommon("empty")}
-      </p>
-    );
+    return <MutedText>{tCommon("empty")}</MutedText>;
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[900px] text-left text-sm">
         <thead>
-          <tr className="border-b border-zinc-200 dark:border-zinc-800">
+          <tr className="border-b border-border">
             <th className="p-2">{t("product")}</th>
             <th className="p-2">{t("quantity")}</th>
             <th className="p-2">{t("totalPrice")}</th>
@@ -299,10 +255,7 @@ async function ActiveSalesTable({
         </thead>
         <tbody>
           {sales.map((sale) => (
-            <tr
-              key={sale.id}
-              className="border-b border-zinc-100 dark:border-zinc-900"
-            >
+            <tr key={sale.id} className="border-b border-border/50">
               <td className="p-2">{sale.description}</td>
               <td className="p-2">{sale.quantity}</td>
               <td className="p-2">
@@ -348,18 +301,14 @@ async function CancelledSalesTable({
   const reversedSales = await listReversedSales(filters);
 
   if (reversedSales.length === 0) {
-    return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        {tCommon("empty")}
-      </p>
-    );
+    return <MutedText>{tCommon("empty")}</MutedText>;
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[900px] text-left text-sm">
         <thead>
-          <tr className="border-b border-zinc-200 dark:border-zinc-800">
+          <tr className="border-b border-border">
             <th className="p-2">{t("product")}</th>
             <th className="p-2">{t("quantity")}</th>
             <th className="p-2">{t("totalPrice")}</th>
@@ -373,10 +322,7 @@ async function CancelledSalesTable({
         </thead>
         <tbody>
           {reversedSales.map(({ sale, action, reason, performedBy, reversedAt }) => (
-            <tr
-              key={sale.id}
-              className="border-b border-zinc-100 dark:border-zinc-900"
-            >
+            <tr key={sale.id} className="border-b border-border/50">
               <td className="p-2">{sale.description}</td>
               <td className="p-2">{sale.quantity}</td>
               <td className="p-2">

@@ -41,7 +41,9 @@
     "users": "Usuarios",
     "movementLog": "Log de movimientos",
     "settings": "Ajustes",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú"
   },
   "Theme": {
     "toggle": "Cambiar tema",

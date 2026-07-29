@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { returnSaleAction, voidSaleAction } from "@/lib/actions/sales";
 import { PromptModal } from "@/components/ui/prompt-modal";
 import { useToast } from "@/components/ui/toast-provider";
+import { IconButton } from "@/components/ui/icon-button";
 import { Ban, RotateCcw } from "lucide-react";
 
 type PendingAction = "return" | "void" | null;
@@ -57,25 +58,20 @@ export function SaleActions({ saleId }: { saleId: string }) {
   }
 
   return (
-    <div className="flex gap-3">
-      <button
-        type="button"
+    <div className="flex items-center gap-2">
+      <IconButton
+        icon={<RotateCcw className="size-5" />}
+        label={t("markAsReturn")}
         onClick={() => setPendingAction("return")}
         disabled={isPending}
-        className="inline-flex items-center gap-1 text-sm underline disabled:opacity-50"
-      >
-        <RotateCcw className="size-4" />
-        {t("markAsReturn")}
-      </button>
-      <button
-        type="button"
+      />
+      <IconButton
+        variant="danger"
+        icon={<Ban className="size-5" />}
+        label={t("voidSale")}
         onClick={() => setPendingAction("void")}
         disabled={isPending}
-        className="inline-flex items-center gap-1 text-sm text-red-600 underline disabled:opacity-50 dark:text-red-400"
-      >
-        <Ban className="size-4" />
-        {t("voidSale")}
-      </button>
+      />
 
       <PromptModal
         open={pendingAction !== null}

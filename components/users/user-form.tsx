@@ -2,12 +2,18 @@
 
 import { useActionState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { Link, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { createUserAction, updateUserAction } from "@/lib/actions/users";
 import { useToast } from "@/components/ui/toast-provider";
 import { Role, City } from "@/app/generated/prisma/enums";
 import type { SerializedUser } from "@/lib/users";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { FormField } from "@/components/ui/form-field";
+import { Alert } from "@/components/ui/alert";
 
 type ActionResult =
   | { success: true; data: unknown }
@@ -73,111 +79,84 @@ export function UserForm({ user }: { user?: SerializedUser }) {
 
   return (
     <form action={formAction} className="flex max-w-md flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="name" className="text-sm font-medium">
-          {t("name")}
-        </label>
-        <input
-          id="name"
-          name="name"
-          required
-          defaultValue={user?.name}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
-      </div>
+      <FormField label={t("name")} htmlFor="name">
+        <Input id="name" name="name" required defaultValue={user?.name} />
+      </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="email" className="text-sm font-medium">
-          {t("email")}
-        </label>
-        <input
+      <FormField label={t("email")} htmlFor="email">
+        <Input
           id="email"
           name="email"
           type="email"
           required
           defaultValue={user?.email}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
         />
-      </div>
+      </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-medium">
-          {isEdit ? t("passwordOptional") : t("password")}
-        </label>
-        <input
+      <FormField
+        label={isEdit ? t("passwordOptional") : t("password")}
+        htmlFor="password"
+      >
+        <Input
           id="password"
           name="password"
           type="password"
           minLength={8}
           required={!isEdit}
           autoComplete="new-password"
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
         />
-      </div>
+      </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="role" className="text-sm font-medium">
-          {t("role")}
-        </label>
-        <select
-          id="role"
-          name="role"
-          required
-          defaultValue={user?.role ?? Role.SELLER}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        >
-          {Object.values(Role).map((role) => (
-            <option key={role} value={role}>
-              {tRole(role)}
-            </option>
-          ))}
-        </select>
-      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormField label={t("role")} htmlFor="role">
+          <Select
+            id="role"
+            name="role"
+            required
+            defaultValue={user?.role ?? Role.SELLER}
+          >
+            {Object.values(Role).map((role) => (
+              <option key={role} value={role}>
+                {tRole(role)}
+              </option>
+            ))}
+          </Select>
+        </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="city" className="text-sm font-medium">
-          {t("city")}
-        </label>
-        <select
-          id="city"
-          name="city"
-          required
-          defaultValue={user?.city ?? City.LA_PAZ}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        >
-          {Object.values(City).map((city) => (
-            <option key={city} value={city}>
-              {tCity(city)}
-            </option>
-          ))}
-        </select>
+        <FormField label={t("city")} htmlFor="city">
+          <Select
+            id="city"
+            name="city"
+            required
+            defaultValue={user?.city ?? City.LA_PAZ}
+          >
+            {Object.values(City).map((city) => (
+              <option key={city} value={city}>
+                {tCity(city)}
+              </option>
+            ))}
+          </Select>
+        </FormField>
       </div>
 
       {state?.success === false && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <Alert>
           {state.error === "Forbidden"
             ? tCommon("errorForbidden")
             : state.error === "email_in_use"
               ? t("errorEmailInUse")
               : tCommon("errorValidation")}
-        </p>
+        </Alert>
       )}
 
       <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-zinc-50 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
-        >
+        <Button type="submit" disabled={pending}>
           {pending && <Loader2 className="size-4 animate-spin" />}
           {isEdit ? tCommon("save") : tCommon("create")}
-        </button>
-        <Link
-          href="/users"
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
-        >
+        </Button>
+        <ButtonLink href="/users" variant="secondary">
           {tCommon("cancel")}
-        </Link>
+        </ButtonLink>
       </div>
     </form>
   );

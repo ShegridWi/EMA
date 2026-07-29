@@ -12,7 +12,7 @@ export default async function DashboardHomePage() {
       <h1 className="text-xl font-semibold">
         {t("welcome", { name: session?.user.name ?? "" })}
       </h1>
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="text-sm text-muted-foreground">
         {session?.user.role && tRole(session.user.role)} ·{" "}
         {session?.user.city && tCity(session.user.city)}
       </p>

@@ -21,7 +21,7 @@ export function ThemeToggle() {
   if (!mounted) {
     // Avoids a hydration mismatch: the resolved theme is only known
     // client-side (next-themes reads it from localStorage/media query).
-    return <div className="h-8 w-8" aria-hidden />;
+    return <div className="size-10" aria-hidden />;
   }
 
   const isDark = resolvedTheme === "dark";
@@ -31,9 +31,19 @@ export function ThemeToggle() {
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={t("toggle")}
-      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-300 dark:border-zinc-700"
+      // size-10 matches every other IconButton in the header (LogOut,
+      // the mobile drawer hamburger); size-6 icon matches the login
+      // page's brand badge (components/login-card.tsx via
+      // app/[locale]/(auth)/login/page.tsx) — this button previously
+      // predated the IconButton primitive and was sized ad hoc
+      // (size-8/size-5), which is what made it look inconsistent.
+      className="flex size-10 cursor-pointer items-center justify-center rounded-md border border-border transition-colors duration-200 ease-in-out hover:bg-muted"
     >
-      {isDark ? <Sun className="size-5" /> : <Moon className="size-5" />}
+      {isDark ? (
+        <Sun className="size-6 transition-transform duration-200 ease-in-out hover:scale-110" />
+      ) : (
+        <Moon className="size-6 transition-transform duration-200 ease-in-out hover:scale-110" />
+      )}
     </button>
   );
 }
