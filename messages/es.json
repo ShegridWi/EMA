@@ -1,0 +1,36 @@
+{
+  "Common": {
+    "appName": "EMA"
+  },
+  "Login": {
+    "title": "Iniciar sesión",
+    "subtitle": "Euforia Moda Administrator",
+    "emailLabel": "Correo electrónico",
+    "passwordLabel": "Contraseña",
+    "submit": "Entrar",
+    "submitting": "Entrando...",
+    "errorInvalidCredentials": "Correo o contraseña incorrectos.",
+    "errorGeneric": "Ocurrió un error. Intenta de nuevo."
+  },
+  "Nav": {
+    "materials": "Confección",
+    "products": "Producto terminado",
+    "sales": "Ventas",
+    "reports": "Reportes",
+    "users": "Usuarios",
+    "movementLog": "Log de movimientos",
+    "signOut": "Cerrar sesión"
+  },
+  "Theme": {
+    "toggle": "Cambiar tema",
+    "light": "Claro",
+    "dark": "Oscuro"
+  },
+  "Dashboard": {
+    "welcome": "Hola, {name}",
+    "roleAdmin": "Administrador",
+    "roleSeller": "Vendedor/a",
+    "cityLaPaz": "La Paz",
+    "citySantaCruz": "Santa Cruz"
+  }
+}

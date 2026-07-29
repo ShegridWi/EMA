@@ -1,0 +1,36 @@
+{
+  "Common": {
+    "appName": "EMA"
+  },
+  "Login": {
+    "title": "Sign in",
+    "subtitle": "Euforia Moda Administrator",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in...",
+    "errorInvalidCredentials": "Incorrect email or password.",
+    "errorGeneric": "Something went wrong. Please try again."
+  },
+  "Nav": {
+    "materials": "Materials",
+    "products": "Finished product",
+    "sales": "Sales",
+    "reports": "Reports",
+    "users": "Users",
+    "movementLog": "Movement log",
+    "signOut": "Sign out"
+  },
+  "Theme": {
+    "toggle": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "Dashboard": {
+    "welcome": "Hi, {name}",
+    "roleAdmin": "Admin",
+    "roleSeller": "Seller",
+    "cityLaPaz": "La Paz",
+    "citySantaCruz": "Santa Cruz"
+  }
+}
