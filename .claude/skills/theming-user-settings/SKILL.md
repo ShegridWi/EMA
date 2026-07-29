@@ -219,6 +219,33 @@ custom-built listbox (e.g. a headless combobox pattern) — treat that as a
 separate, explicitly-scoped follow-up if it comes up, not something to
 solve preemptively across all 24 selects.
 
+### `<input type="date">`'s native calendar icon/popup: use `color-scheme`, not a color token
+
+The date picker icon and its popup are rendered by the browser outside
+the DOM — no `bg-*`/`text-*` utility reaches them, so the "explicit
+background + text color" rule above doesn't apply here. The correct hook
+is the CSS `color-scheme` property, set once in `app/globals.css`:
+
+```css
+input[type="date"] {
+  color-scheme: light;
+}
+.dark input[type="date"] {
+  color-scheme: dark;
+}
+```
+
+This is why every `<input type="date">` in the app should go through the
+`Input` primitive (`components/ui/input.tsx`) rather than a raw
+`<input>` — the primitive doesn't need to do anything special for dates,
+but relying on it keeps date inputs inside the same `.dark` selector
+scoping as everything else instead of one being styled ad hoc. Don't
+reach for a `filter: invert(...)` hack on
+`::-webkit-calendar-picker-indicator` — `color-scheme` is the
+standards-based fix (Chromium, Firefox, and Safari all honor it for
+native form-control chrome) and also themes the popup itself, not just
+the icon.
+
 ## Adding a new color in the future
 
 1. Never add a literal hex or a raw Tailwind palette class in a component.

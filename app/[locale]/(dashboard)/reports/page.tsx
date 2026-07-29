@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/ui/form-field";
+import { MutedText } from "@/components/ui/muted-text";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -26,9 +30,7 @@ export default async function ReportsPage({ params }: Props) {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-semibold">{t("title")}</h1>
-      <p className="max-w-prose text-sm text-zinc-500 dark:text-zinc-400">
-        {t("description")}
-      </p>
+      <MutedText className="max-w-prose">{t("description")}</MutedText>
 
       {/* Plain GET form to the route handler — the browser downloads the
           PDF response directly (Content-Disposition: attachment), no
@@ -39,38 +41,25 @@ export default async function ReportsPage({ params }: Props) {
         className="flex flex-wrap items-end gap-2"
       >
         <input type="hidden" name="locale" value={locale} />
-        <div className="flex flex-col gap-1">
-          <label htmlFor="from" className="text-sm font-medium">
-            {t("dateFrom")}
-          </label>
-          <input
+        <FormField label={t("dateFrom")} htmlFor="from">
+          <Input
             id="from"
             name="from"
             type="date"
             required
             defaultValue={defaultFrom}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
           />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="to" className="text-sm font-medium">
-            {t("dateTo")}
-          </label>
-          <input
+        </FormField>
+        <FormField label={t("dateTo")} htmlFor="to">
+          <Input
             id="to"
             name="to"
             type="date"
             required
             defaultValue={defaultTo}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
           />
-        </div>
-        <button
-          type="submit"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 dark:bg-zinc-50 dark:text-zinc-900"
-        >
-          {t("download")}
-        </button>
+        </FormField>
+        <Button type="submit">{t("download")}</Button>
       </form>
     </div>
   );

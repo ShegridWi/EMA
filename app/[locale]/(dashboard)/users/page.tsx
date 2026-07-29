@@ -7,6 +7,12 @@ import { Role, City } from "@/app/generated/prisma/enums";
 import { DeactivateUserButton } from "@/components/users/deactivate-user-button";
 import { ReactivateUserButton } from "@/components/users/reactivate-user-button";
 import { Pencil } from "lucide-react";
+import { ButtonLink } from "@/components/ui/button-link";
+import { IconButtonLink } from "@/components/ui/icon-button";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { MutedText } from "@/components/ui/muted-text";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -65,33 +71,28 @@ export default async function UsersPage({ params, searchParams }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold">{t("title")}</h1>
-        <Link
-          href="/users/new"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 dark:bg-zinc-50 dark:text-zinc-900"
-        >
-          {t("addNew")}
-        </Link>
+        <ButtonLink href="/users/new">{t("addNew")}</ButtonLink>
       </div>
 
-      <div className="flex gap-4 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="flex gap-4 border-b border-border">
         <Link
           href={buildHref({ q, role, city })}
-          className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+          className={`border-b-2 px-1 pb-2 text-sm font-medium transition-colors duration-200 ease-in-out ${
             isInactiveTab
-              ? "border-transparent text-zinc-500 dark:text-zinc-400"
-              : "border-zinc-900 dark:border-zinc-50"
+              ? "border-transparent text-muted-foreground hover:text-foreground"
+              : "border-primary"
           }`}
         >
           {t("tabActive")}
         </Link>
         <Link
           href={buildHref({ q, role, city }, "inactive")}
-          className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+          className={`border-b-2 px-1 pb-2 text-sm font-medium transition-colors duration-200 ease-in-out ${
             isInactiveTab
-              ? "border-zinc-900 dark:border-zinc-50"
-              : "border-transparent text-zinc-500 dark:text-zinc-400"
+              ? "border-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           {t("tabInactive")}
@@ -100,17 +101,17 @@ export default async function UsersPage({ params, searchParams }: Props) {
 
       <form className="flex flex-wrap gap-2">
         {isInactiveTab && <input type="hidden" name="tab" value="inactive" />}
-        <input
+        <Input
           type="search"
           name="q"
           defaultValue={q ?? ""}
           placeholder={t("searchPlaceholder")}
-          className="w-full max-w-sm rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+          className="w-full max-w-sm"
         />
-        <select
+        <Select
           name="role"
           defaultValue={roleFilter ?? ""}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+          fullWidth={false}
         >
           <option value="">{t("roleAll")}</option>
           {Object.values(Role).map((value) => (
@@ -118,11 +119,11 @@ export default async function UsersPage({ params, searchParams }: Props) {
               {tRole(value)}
             </option>
           ))}
-        </select>
-        <select
+        </Select>
+        <Select
           name="city"
           defaultValue={cityFilter ?? ""}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+          fullWidth={false}
         >
           <option value="">{t("cityAll")}</option>
           {Object.values(City).map((value) => (
@@ -130,24 +131,19 @@ export default async function UsersPage({ params, searchParams }: Props) {
               {tCity(value)}
             </option>
           ))}
-        </select>
-        <button
-          type="submit"
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
-        >
+        </Select>
+        <Button type="submit" variant="secondary">
           {tCommon("search")}
-        </button>
+        </Button>
       </form>
 
       {users.length === 0 ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {tCommon("empty")}
-        </p>
+        <MutedText>{tCommon("empty")}</MutedText>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 dark:border-zinc-800">
+              <tr className="border-b border-border">
                 <th className="p-2">{t("name")}</th>
                 <th className="p-2">{t("email")}</th>
                 <th className="p-2">{t("role")}</th>
@@ -157,23 +153,18 @@ export default async function UsersPage({ params, searchParams }: Props) {
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr
-                  key={user.id}
-                  className="border-b border-zinc-100 dark:border-zinc-900"
-                >
+                <tr key={user.id} className="border-b border-border/50">
                   <td className="p-2">{user.name}</td>
                   <td className="p-2">{user.email}</td>
                   <td className="p-2">{tRole(user.role)}</td>
                   <td className="p-2">{tCity(user.city)}</td>
                   <td className="p-2">
-                    <div className="flex gap-3">
-                      <Link
+                    <div className="flex items-center gap-2">
+                      <IconButtonLink
                         href={`/users/${user.id}/edit`}
-                        className="inline-flex items-center gap-1 underline"
-                      >
-                        <Pencil className="size-4" />
-                        {tCommon("edit")}
-                      </Link>
+                        icon={<Pencil className="size-5" />}
+                        label={tCommon("edit")}
+                      />
                       {user.active ? (
                         <DeactivateUserButton
                           id={user.id}

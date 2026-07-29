@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { deleteMaterialAction } from "@/lib/actions/materials";
 import { useToast } from "@/components/ui/toast-provider";
 import { PromptModal } from "@/components/ui/prompt-modal";
+import { IconButton } from "@/components/ui/icon-button";
 import { Trash2 } from "lucide-react";
 
 // Uses PromptModal (components/ui) instead of window.confirm() — no
@@ -33,15 +34,13 @@ export function DeleteMaterialButton({ id }: { id: string }) {
 
   return (
     <>
-      <button
-        type="button"
+      <IconButton
+        variant="danger"
+        icon={<Trash2 className="size-5" />}
+        label={t("delete")}
         onClick={() => setOpen(true)}
         disabled={isPending}
-        className="inline-flex items-center gap-1 text-red-600 underline disabled:opacity-50 dark:text-red-400"
-      >
-        <Trash2 className="size-4" />
-        {t("delete")}
-      </button>
+      />
 
       <PromptModal
         open={open}

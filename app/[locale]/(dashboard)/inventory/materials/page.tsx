@@ -8,6 +8,12 @@ import { ReactivateMaterialButton } from "@/components/materials/reactivate-mate
 import { formatCurrency } from "@/lib/currency";
 import { zonedTimeToUtc } from "@/lib/timezone";
 import { History, Pencil } from "lucide-react";
+import { ButtonLink } from "@/components/ui/button-link";
+import { IconButtonLink } from "@/components/ui/icon-button";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/ui/form-field";
+import { MutedText } from "@/components/ui/muted-text";
 
 type Props = {
   searchParams: Promise<{ q?: string; from?: string; to?: string; tab?: string }>;
@@ -63,35 +69,32 @@ export default async function MaterialsPage({ searchParams }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold">{t("title")}</h1>
         {isAdmin && (
-          <Link
-            href="/inventory/materials/new"
-            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 dark:bg-zinc-50 dark:text-zinc-900"
-          >
+          <ButtonLink href="/inventory/materials/new">
             {t("addNew")}
-          </Link>
+          </ButtonLink>
         )}
       </div>
 
-      <div className="flex gap-4 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="flex gap-4 border-b border-border">
         <Link
           href={buildHref({ q, from, to })}
-          className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+          className={`border-b-2 px-1 pb-2 text-sm font-medium transition-colors duration-200 ease-in-out ${
             isInactiveTab
-              ? "border-transparent text-zinc-500 dark:text-zinc-400"
-              : "border-zinc-900 dark:border-zinc-50"
+              ? "border-transparent text-muted-foreground hover:text-foreground"
+              : "border-primary"
           }`}
         >
           {t("tabActive")}
         </Link>
         <Link
           href={buildHref({ q, from, to }, "inactive")}
-          className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+          className={`border-b-2 px-1 pb-2 text-sm font-medium transition-colors duration-200 ease-in-out ${
             isInactiveTab
-              ? "border-zinc-900 dark:border-zinc-50"
-              : "border-transparent text-zinc-500 dark:text-zinc-400"
+              ? "border-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           {t("tabInactive")}
@@ -100,54 +103,31 @@ export default async function MaterialsPage({ searchParams }: Props) {
 
       <form className="flex flex-wrap items-end gap-2">
         {isInactiveTab && <input type="hidden" name="tab" value="inactive" />}
-        <input
+        <Input
           type="search"
           name="q"
           defaultValue={q ?? ""}
           placeholder={t("searchPlaceholder")}
-          className="w-full max-w-sm rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+          className="w-full max-w-sm"
         />
-        <div className="flex flex-col gap-1">
-          <label htmlFor="from" className="text-sm font-medium">
-            {t("createdFrom")}
-          </label>
-          <input
-            id="from"
-            name="from"
-            type="date"
-            defaultValue={from ?? ""}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="to" className="text-sm font-medium">
-            {t("createdTo")}
-          </label>
-          <input
-            id="to"
-            name="to"
-            type="date"
-            defaultValue={to ?? ""}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          />
-        </div>
-        <button
-          type="submit"
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
-        >
+        <FormField label={t("createdFrom")} htmlFor="from">
+          <Input id="from" name="from" type="date" defaultValue={from ?? ""} />
+        </FormField>
+        <FormField label={t("createdTo")} htmlFor="to">
+          <Input id="to" name="to" type="date" defaultValue={to ?? ""} />
+        </FormField>
+        <Button type="submit" variant="secondary">
           {tCommon("search")}
-        </button>
+        </Button>
       </form>
 
       {materials.length === 0 ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {tCommon("empty")}
-        </p>
+        <MutedText>{tCommon("empty")}</MutedText>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 dark:border-zinc-800">
+              <tr className="border-b border-border">
                 <th className="p-2">{t("materialType")}</th>
                 <th className="p-2">{t("type")}</th>
                 <th className="p-2">{t("color")}</th>
@@ -160,10 +140,7 @@ export default async function MaterialsPage({ searchParams }: Props) {
             </thead>
             <tbody>
               {materials.map((material) => (
-                <tr
-                  key={material.id}
-                  className="border-b border-zinc-100 dark:border-zinc-900"
-                >
+                <tr key={material.id} className="border-b border-border/50">
                   <td className="p-2">{material.materialType}</td>
                   <td className="p-2">{material.type}</td>
                   <td className="p-2">{material.color ?? "—"}</td>
@@ -174,23 +151,19 @@ export default async function MaterialsPage({ searchParams }: Props) {
                     {formatCurrency(material.purchasePrice.toString())}
                   </td>
                   <td className="p-2">
-                    <div className="flex gap-3">
-                      <Link
+                    <div className="flex items-center gap-2">
+                      <IconButtonLink
                         href={`/inventory/materials/${material.id}/history`}
-                        className="inline-flex items-center gap-1 underline"
-                      >
-                        <History className="size-4" />
-                        {tHistory("linkLabel")}
-                      </Link>
+                        icon={<History className="size-5" />}
+                        label={tHistory("linkLabel")}
+                      />
                       {isAdmin && (
                         <>
-                          <Link
+                          <IconButtonLink
                             href={`/inventory/materials/${material.id}/edit`}
-                            className="inline-flex items-center gap-1 underline"
-                          >
-                            <Pencil className="size-4" />
-                            {tCommon("edit")}
-                          </Link>
+                            icon={<Pencil className="size-5" />}
+                            label={tCommon("edit")}
+                          />
                           {material.active ? (
                             <DeactivateMaterialButton id={material.id} />
                           ) : (

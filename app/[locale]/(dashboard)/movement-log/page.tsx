@@ -4,7 +4,13 @@ import { auth } from "@/lib/auth";
 import { listMovementLogs, formatMetadata, ENTITY_TYPES } from "@/lib/movement-log";
 import { listUsers } from "@/lib/users";
 import { zonedTimeToUtc, formatInTimezone } from "@/lib/timezone";
-import { Link } from "@/i18n/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { FormField } from "@/components/ui/form-field";
+import { MutedText } from "@/components/ui/muted-text";
+import { IconButtonLink } from "@/components/ui/icon-button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const PAGE_SIZE = 25;
 
@@ -85,39 +91,17 @@ export default async function MovementLogPage({ params, searchParams }: Props) {
       <h1 className="text-xl font-semibold">{t("title")}</h1>
 
       <form className="flex flex-wrap items-end gap-2">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="from" className="text-sm font-medium">
-            {t("dateFrom")}
-          </label>
-          <input
-            id="from"
-            name="from"
-            type="date"
-            defaultValue={from ?? ""}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="to" className="text-sm font-medium">
-            {t("dateTo")}
-          </label>
-          <input
-            id="to"
-            name="to"
-            type="date"
-            defaultValue={to ?? ""}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="entityType" className="text-sm font-medium">
-            {t("entityTypeLabel")}
-          </label>
-          <select
+        <FormField label={t("dateFrom")} htmlFor="from">
+          <Input id="from" name="from" type="date" defaultValue={from ?? ""} />
+        </FormField>
+        <FormField label={t("dateTo")} htmlFor="to">
+          <Input id="to" name="to" type="date" defaultValue={to ?? ""} />
+        </FormField>
+        <FormField label={t("entityTypeLabel")} htmlFor="entityType">
+          <Select
             id="entityType"
             name="entityType"
             defaultValue={entityTypeFilter ?? ""}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
           >
             <option value="">{t("entityTypeAll")}</option>
             {ENTITY_TYPES.map((value) => (
@@ -125,44 +109,31 @@ export default async function MovementLogPage({ params, searchParams }: Props) {
                 {tEntityType(value)}
               </option>
             ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="userId" className="text-sm font-medium">
-            {t("userLabel")}
-          </label>
-          <select
-            id="userId"
-            name="userId"
-            defaultValue={userId ?? ""}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          >
+          </Select>
+        </FormField>
+        <FormField label={t("userLabel")} htmlFor="userId">
+          <Select id="userId" name="userId" defaultValue={userId ?? ""}>
             <option value="">{t("userAll")}</option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
                 {user.name}
               </option>
             ))}
-          </select>
-        </div>
-        <button
-          type="submit"
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
-        >
+          </Select>
+        </FormField>
+        <Button type="submit" variant="secondary">
           {tCommon("search")}
-        </button>
+        </Button>
       </form>
 
       {logs.length === 0 ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {tCommon("empty")}
-        </p>
+        <MutedText>{tCommon("empty")}</MutedText>
       ) : (
         <>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800">
+                <tr className="border-b border-border">
                   <th className="p-2">{t("tableDate")}</th>
                   <th className="p-2">{t("tableUser")}</th>
                   <th className="p-2">{t("tableAction")}</th>
@@ -172,10 +143,7 @@ export default async function MovementLogPage({ params, searchParams }: Props) {
               </thead>
               <tbody>
                 {logs.map((log) => (
-                  <tr
-                    key={log.id}
-                    className="border-b border-zinc-100 dark:border-zinc-900"
-                  >
+                  <tr key={log.id} className="border-b border-border/50">
                     <td className="p-2 whitespace-nowrap">
                       {formatInTimezone(log.createdAt, timeZone, locale, {
                         dateStyle: "short",
@@ -185,7 +153,7 @@ export default async function MovementLogPage({ params, searchParams }: Props) {
                     <td className="p-2">{log.user.name}</td>
                     <td className="p-2">{tAction(log.action)}</td>
                     <td className="p-2">{tEntityType(log.entityType)}</td>
-                    <td className="p-2 text-zinc-600 dark:text-zinc-400">
+                    <td className="p-2 text-muted-foreground">
                       {formatMetadata(log.metadata)}
                     </td>
                   </tr>
@@ -195,19 +163,23 @@ export default async function MovementLogPage({ params, searchParams }: Props) {
           </div>
 
           <div className="flex items-center justify-between text-sm">
-            <span className="text-zinc-500 dark:text-zinc-400">
+            <span className="text-muted-foreground">
               {t("pageIndicator", { page, pageCount, total })}
             </span>
-            <div className="flex gap-3">
+            <div className="flex items-center gap-2">
               {page > 1 && (
-                <Link href={buildHref(filters, page - 1)} className="underline">
-                  {t("previousPage")}
-                </Link>
+                <IconButtonLink
+                  href={buildHref(filters, page - 1)}
+                  icon={<ChevronLeft className="size-5" />}
+                  label={t("previousPage")}
+                />
               )}
               {page < pageCount && (
-                <Link href={buildHref(filters, page + 1)} className="underline">
-                  {t("nextPage")}
-                </Link>
+                <IconButtonLink
+                  href={buildHref(filters, page + 1)}
+                  icon={<ChevronRight className="size-5" />}
+                  label={t("nextPage")}
+                />
               )}
             </div>
           </div>

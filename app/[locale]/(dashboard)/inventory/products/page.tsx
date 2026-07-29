@@ -10,6 +10,14 @@ import { zonedTimeToUtc } from "@/lib/timezone";
 import { Size } from "@/app/generated/prisma/enums";
 import type { Product } from "@/app/generated/prisma/client";
 import { History, Pencil } from "lucide-react";
+import { ButtonLink } from "@/components/ui/button-link";
+import { IconButtonLink } from "@/components/ui/icon-button";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { FormField } from "@/components/ui/form-field";
+import { Card } from "@/components/ui/card";
+import { MutedText } from "@/components/ui/muted-text";
 
 type Props = {
   searchParams: Promise<{
@@ -98,43 +106,37 @@ export default async function ProductsPage({ searchParams }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold">{t("title")}</h1>
         {isAdmin && (
-          <div className="flex gap-2">
-            <Link
-              href="/inventory/products/new-set"
-              className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 dark:bg-zinc-50 dark:text-zinc-900"
-            >
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink href="/inventory/products/new-set">
               {t("addNewSet")}
-            </Link>
-            <Link
-              href="/inventory/products/new"
-              className="rounded-md border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
-            >
+            </ButtonLink>
+            <ButtonLink href="/inventory/products/new" variant="secondary">
               {t("addNewUnit")}
-            </Link>
+            </ButtonLink>
           </div>
         )}
       </div>
 
-      <div className="flex gap-4 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="flex gap-4 border-b border-border">
         <Link
           href={buildHref({ q, size, from, to })}
-          className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+          className={`border-b-2 px-1 pb-2 text-sm font-medium transition-colors duration-200 ease-in-out ${
             isInactiveTab
-              ? "border-transparent text-zinc-500 dark:text-zinc-400"
-              : "border-zinc-900 dark:border-zinc-50"
+              ? "border-transparent text-muted-foreground hover:text-foreground"
+              : "border-primary"
           }`}
         >
           {t("tabActive")}
         </Link>
         <Link
           href={buildHref({ q, size, from, to }, "inactive")}
-          className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+          className={`border-b-2 px-1 pb-2 text-sm font-medium transition-colors duration-200 ease-in-out ${
             isInactiveTab
-              ? "border-zinc-900 dark:border-zinc-50"
-              : "border-transparent text-zinc-500 dark:text-zinc-400"
+              ? "border-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           {t("tabInactive")}
@@ -143,104 +145,66 @@ export default async function ProductsPage({ searchParams }: Props) {
 
       <form className="flex flex-wrap items-end gap-2">
         {isInactiveTab && <input type="hidden" name="tab" value="inactive" />}
-        <input
+        <Input
           type="search"
           name="q"
           defaultValue={q ?? ""}
           placeholder={t("searchPlaceholder")}
-          className="w-full max-w-sm rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+          className="w-full max-w-sm"
         />
-        <div className="flex flex-col gap-1">
-          <label htmlFor="size" className="text-sm font-medium">
-            {t("size")}
-          </label>
-          <select
-            id="size"
-            name="size"
-            defaultValue={sizeFilter ?? ""}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          >
+        <FormField label={t("size")} htmlFor="size">
+          <Select id="size" name="size" defaultValue={sizeFilter ?? ""}>
             <option value="">{t("sizeAll")}</option>
             {Object.values(Size).map((value) => (
               <option key={value} value={value}>
                 {tSize(value)}
               </option>
             ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="from" className="text-sm font-medium">
-            {t("createdFrom")}
-          </label>
-          <input
-            id="from"
-            name="from"
-            type="date"
-            defaultValue={from ?? ""}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="to" className="text-sm font-medium">
-            {t("createdTo")}
-          </label>
-          <input
-            id="to"
-            name="to"
-            type="date"
-            defaultValue={to ?? ""}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          />
-        </div>
-        <button
-          type="submit"
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
-        >
+          </Select>
+        </FormField>
+        <FormField label={t("createdFrom")} htmlFor="from">
+          <Input id="from" name="from" type="date" defaultValue={from ?? ""} />
+        </FormField>
+        <FormField label={t("createdTo")} htmlFor="to">
+          <Input id="to" name="to" type="date" defaultValue={to ?? ""} />
+        </FormField>
+        <Button type="submit" variant="secondary">
           {tCommon("search")}
-        </button>
+        </Button>
       </form>
 
       {isEmpty ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {tCommon("empty")}
-        </p>
+        <MutedText>{tCommon("empty")}</MutedText>
       ) : (
         <div className="flex flex-col gap-10">
           {sets.length > 0 && (
             <section className="flex flex-col gap-4">
-              <h2 className="text-sm font-semibold uppercase text-zinc-500 dark:text-zinc-400">
+              <h2 className="text-sm font-semibold uppercase text-muted-foreground">
                 {t("setsSectionTitle")}
               </h2>
               {sets.map((set) => (
-                <div
-                  key={set.id}
-                  className="rounded-md border border-zinc-200 dark:border-zinc-800"
-                >
-                  <div className="flex items-center justify-between p-3">
+                <Card key={set.id}>
+                  <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="font-medium">{set.description}</p>
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                      <MutedText>
                         {set.color} · {tSize(set.size)} · {tCity(set.city)} ·{" "}
                         {formatCurrency(set.price.toString())}
-                      </p>
+                      </MutedText>
                     </div>
-                    <div className="flex gap-3">
-                      <Link
+                    <div className="flex flex-wrap items-center gap-2">
+                      <IconButtonLink
                         href={`/inventory/products/${set.id}/history`}
-                        className="inline-flex items-center gap-1 text-sm underline"
-                      >
-                        <History className="size-4" />
-                        {tHistory("linkLabel")}
-                      </Link>
+                        icon={<History className="size-5" />}
+                        label={tHistory("linkLabel")}
+                      />
                       {isAdmin && (
                         <>
-                          <Link
+                          <IconButtonLink
                             href={`/inventory/products/${set.id}/edit`}
-                            className="inline-flex items-center gap-1 text-sm underline"
-                          >
-                            <Pencil className="size-4" />
-                            {tCommon("edit")}
-                          </Link>
+                            icon={<Pencil className="size-5" />}
+                            label={tCommon("edit")}
+                          />
                           {set.active ? (
                             <DeactivateProductButton id={set.id} />
                           ) : (
@@ -251,10 +215,10 @@ export default async function ProductsPage({ searchParams }: Props) {
                       )}
                     </div>
                   </div>
-                  <div className="overflow-x-auto border-t border-zinc-200 dark:border-zinc-800">
+                  <div className="overflow-x-auto border-t border-border">
                     <table className="w-full min-w-[560px] text-left text-sm">
                       <thead>
-                        <tr className="border-b border-zinc-200 dark:border-zinc-800">
+                        <tr className="border-b border-border">
                           <th className="p-2">{t("kindUnit")}</th>
                           <th className="p-2">{t("quantity")}</th>
                           <th className="p-2">{t("price")}</th>
@@ -263,10 +227,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                       </thead>
                       <tbody>
                         {(piecesBySetId.get(set.id) ?? []).map((piece) => (
-                          <tr
-                            key={piece.id}
-                            className="border-b border-zinc-100 dark:border-zinc-900"
-                          >
+                          <tr key={piece.id} className="border-b border-border/50">
                             <td className="p-2">
                               {piece.pieceRole ? tPieceRole(piece.pieceRole) : "—"}
                             </td>
@@ -275,52 +236,48 @@ export default async function ProductsPage({ searchParams }: Props) {
                               {formatCurrency(piece.price.toString())}
                             </td>
                             <td className="p-2">
-                                <div className="flex gap-3">
-                                  <Link
-                                    href={`/inventory/products/${piece.id}/history`}
-                                    className="inline-flex items-center gap-1 underline"
-                                  >
-                                    <History className="size-4" />
-                                    {tHistory("linkLabel")}
-                                  </Link>
-                                  {isAdmin && (
-                                    <>
-                                  <Link
-                                    href={`/inventory/products/${piece.id}/edit`}
-                                    className="inline-flex items-center gap-1 underline"
-                                  >
-                                    <Pencil className="size-4" />
-                                    {tCommon("edit")}
-                                  </Link>
-                                  {piece.active ? (
-                                    <DeactivateProductButton id={piece.id} />
-                                  ) : (
-                                    <ReactivateProductButton id={piece.id} />
-                                  )}
-                                  <DeleteProductButton id={piece.id} />
+                              <div className="flex items-center gap-2">
+                                <IconButtonLink
+                                  href={`/inventory/products/${piece.id}/history`}
+                                  icon={<History className="size-5" />}
+                                  label={tHistory("linkLabel")}
+                                />
+                                {isAdmin && (
+                                  <>
+                                    <IconButtonLink
+                                      href={`/inventory/products/${piece.id}/edit`}
+                                      icon={<Pencil className="size-5" />}
+                                      label={tCommon("edit")}
+                                    />
+                                    {piece.active ? (
+                                      <DeactivateProductButton id={piece.id} />
+                                    ) : (
+                                      <ReactivateProductButton id={piece.id} />
+                                    )}
+                                    <DeleteProductButton id={piece.id} />
                                   </>
-                                  )}
-                                </div>
-                              </td>
+                                )}
+                              </div>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </Card>
               ))}
             </section>
           )}
 
           {standalone.length > 0 && (
             <section className="flex flex-col gap-4">
-              <h2 className="text-sm font-semibold uppercase text-zinc-500 dark:text-zinc-400">
+              <h2 className="text-sm font-semibold uppercase text-muted-foreground">
                 {t("standaloneSectionTitle")}
               </h2>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px] text-left text-sm">
                   <thead>
-                    <tr className="border-b border-zinc-200 dark:border-zinc-800">
+                    <tr className="border-b border-border">
                       <th className="p-2">{t("description")}</th>
                       <th className="p-2">{t("color")}</th>
                       <th className="p-2">{t("size")}</th>
@@ -332,10 +289,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                   </thead>
                   <tbody>
                     {standalone.map((product) => (
-                      <tr
-                        key={product.id}
-                        className="border-b border-zinc-100 dark:border-zinc-900"
-                      >
+                      <tr key={product.id} className="border-b border-border/50">
                         <td className="p-2">{product.description}</td>
                         <td className="p-2">{product.color}</td>
                         <td className="p-2">{tSize(product.size)}</td>
@@ -345,23 +299,19 @@ export default async function ProductsPage({ searchParams }: Props) {
                         </td>
                         <td className="p-2">{tCity(product.city)}</td>
                         <td className="p-2">
-                          <div className="flex gap-3">
-                            <Link
+                          <div className="flex items-center gap-2">
+                            <IconButtonLink
                               href={`/inventory/products/${product.id}/history`}
-                              className="inline-flex items-center gap-1 underline"
-                            >
-                              <History className="size-4" />
-                              {tHistory("linkLabel")}
-                            </Link>
+                              icon={<History className="size-5" />}
+                              label={tHistory("linkLabel")}
+                            />
                             {isAdmin && (
                               <>
-                                <Link
+                                <IconButtonLink
                                   href={`/inventory/products/${product.id}/edit`}
-                                  className="inline-flex items-center gap-1 underline"
-                                >
-                                  <Pencil className="size-4" />
-                                  {tCommon("edit")}
-                                </Link>
+                                  icon={<Pencil className="size-5" />}
+                                  label={tCommon("edit")}
+                                />
                                 {product.active ? (
                                   <DeactivateProductButton id={product.id} />
                                 ) : (

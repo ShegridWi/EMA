@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { motion } from "framer-motion";
+import { Button } from "./button";
+import { Textarea } from "./textarea";
+import { FormField } from "./form-field";
 
 export type PromptModalProps = {
   open: boolean;
@@ -32,6 +36,15 @@ export type PromptModalProps = {
  *
  * Controlled via `open` — the parent owns the open/closed state and
  * decides what to do with the confirmed value.
+ *
+ * The <dialog> itself owns focus-trap/Escape/top-layer behavior (kept
+ * native rather than replaced by framer-motion, per
+ * .claude/skills/motion-and-transitions/SKILL.md); only its *content* is
+ * animated via framer-motion. Closing is deferred until the exit
+ * animation finishes (see onAnimationComplete below) instead of calling
+ * dialog.close() the instant `open` flips to false, so the fade/scale-out
+ * actually gets to play before the native dialog (and its ::backdrop)
+ * disappear.
  */
 export function PromptModal({
   open,
@@ -53,9 +66,9 @@ export function PromptModal({
     if (open && !dialog.open) {
       setValue("");
       dialog.showModal();
-    } else if (!open && dialog.open) {
-      dialog.close();
     }
+    // Closing the native dialog is handled by onAnimationComplete below,
+    // once the exit animation finishes — not here.
   }, [open]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -66,58 +79,60 @@ export function PromptModal({
   return (
     <dialog
       ref={dialogRef}
-      onCancel={() => onCancel()}
+      onCancel={(event) => {
+        // Prevent the native instant close on Escape — let the `open`
+        // state flip to false first, so the exit animation plays before
+        // the dialog actually closes (same reasoning as the Cancel
+        // button, which never calls dialog.close() directly either).
+        event.preventDefault();
+        onCancel();
+      }}
       // Native <dialog> centers itself via the UA stylesheet's
       // `margin: auto`, but Tailwind's preflight reset zeroes out margin
       // on every element first — so it has to be re-applied explicitly
       // here instead of relying on the browser default.
-      className="fixed top-1/2 left-1/2 m-0 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-md border border-zinc-300 bg-white p-0 text-zinc-900 backdrop:bg-black/50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+      className="fixed top-1/2 left-1/2 m-0 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-md border border-border bg-background p-0 text-foreground backdrop:bg-black/50"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-4">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-sm font-semibold">{title}</h2>
-          {message && (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              {message}
-            </p>
-          )}
-        </div>
-
-        {inputLabel && (
+      <motion.div
+        initial={false}
+        animate={open ? "visible" : "hidden"}
+        variants={{
+          visible: { opacity: 1, scale: 1 },
+          hidden: { opacity: 0, scale: 0.95 },
+        }}
+        transition={
+          open ? { duration: 0.2, ease: "easeOut" } : { duration: 0.15, ease: "easeIn" }
+        }
+        onAnimationComplete={(variant) => {
+          if (variant === "hidden") dialogRef.current?.close();
+        }}
+      >
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-4">
           <div className="flex flex-col gap-1">
-            <label
-              htmlFor="prompt-modal-input"
-              className="text-sm font-medium"
-            >
-              {inputLabel}
-            </label>
-            <textarea
-              id="prompt-modal-input"
-              value={value}
-              onChange={(event) => setValue(event.target.value)}
-              placeholder={placeholder}
-              rows={3}
-              className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-            />
+            <h2 className="text-sm font-semibold">{title}</h2>
+            {message && <p className="text-sm text-muted-foreground">{message}</p>}
           </div>
-        )}
 
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-md border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="submit"
-            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 dark:bg-zinc-50 dark:text-zinc-900"
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </form>
+          {inputLabel && (
+            <FormField label={inputLabel} htmlFor="prompt-modal-input">
+              <Textarea
+                id="prompt-modal-input"
+                value={value}
+                onChange={(event) => setValue(event.target.value)}
+                placeholder={placeholder}
+                rows={3}
+              />
+            </FormField>
+          )}
+
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="secondary" onClick={onCancel}>
+              {cancelLabel}
+            </Button>
+            <Button type="submit">{confirmLabel}</Button>
+          </div>
+        </form>
+      </motion.div>
     </dialog>
   );
 }

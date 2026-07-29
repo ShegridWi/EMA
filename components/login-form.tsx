@@ -4,6 +4,10 @@ import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { loginAction, type LoginActionState } from "@/lib/actions/auth";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/ui/form-field";
+import { Alert } from "@/components/ui/alert";
 
 export function LoginForm({ locale }: { locale: string }) {
   const t = useTranslations("Login");
@@ -14,48 +18,36 @@ export function LoginForm({ locale }: { locale: string }) {
   >(boundAction, null);
 
   return (
-    <form action={formAction} className="flex w-full max-w-sm flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="email" className="text-sm font-medium">
-          {t("emailLabel")}
-        </label>
-        <input
+    <form action={formAction} className="flex flex-col gap-4">
+      <FormField label={t("emailLabel")} htmlFor="email">
+        <Input
           id="email"
           name="email"
           type="email"
           required
           autoComplete="email"
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
         />
-      </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-medium">
-          {t("passwordLabel")}
-        </label>
-        <input
+      </FormField>
+      <FormField label={t("passwordLabel")} htmlFor="password">
+        <Input
           id="password"
           name="password"
           type="password"
           required
           autoComplete="current-password"
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
         />
-      </div>
+      </FormField>
       {state?.success === false && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <Alert>
           {state.error === "invalid_credentials"
             ? t("errorInvalidCredentials")
             : t("errorGeneric")}
-        </p>
+        </Alert>
       )}
-      <button
-        type="submit"
-        disabled={pending}
-        className="inline-flex items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-zinc-50 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
-      >
+      <Button type="submit" disabled={pending}>
         {pending && <Loader2 className="size-4 animate-spin" />}
         {pending ? t("submitting") : t("submit")}
-      </button>
+      </Button>
     </form>
   );
 }

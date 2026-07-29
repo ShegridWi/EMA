@@ -2,11 +2,17 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Link, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { createSetProductAction } from "@/lib/actions/products";
 import { useToast } from "@/components/ui/toast-provider";
 import { Size, City } from "@/app/generated/prisma/enums";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { FormField } from "@/components/ui/form-field";
+import { Alert } from "@/components/ui/alert";
 
 type ActionResult =
   | { success: true; data: unknown }
@@ -68,115 +74,73 @@ export function SetProductForm() {
 
   return (
     <form action={formAction} className="flex max-w-md flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="description" className="text-sm font-medium">
-          {t("description")}
-        </label>
-        <input
-          id="description"
-          name="description"
-          required
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
+      <FormField label={t("description")} htmlFor="description">
+        <Input id="description" name="description" required />
+      </FormField>
+
+      <FormField label={t("color")} htmlFor="color">
+        <Input id="color" name="color" required />
+      </FormField>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormField label={t("size")} htmlFor="size">
+          <Select id="size" name="size" required defaultValue={Size.M}>
+            {Object.values(Size).map((size) => (
+              <option key={size} value={size}>
+                {tSize(size)}
+              </option>
+            ))}
+          </Select>
+        </FormField>
+
+        <FormField label={t("price")} htmlFor="price">
+          <Input
+            id="price"
+            name="price"
+            type="number"
+            step="0.01"
+            min="0"
+            required
+          />
+        </FormField>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="color" className="text-sm font-medium">
-          {t("color")}
-        </label>
-        <input
-          id="color"
-          name="color"
-          required
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="size" className="text-sm font-medium">
-          {t("size")}
-        </label>
-        <select
-          id="size"
-          name="size"
-          required
-          defaultValue={Size.M}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        >
-          {Object.values(Size).map((size) => (
-            <option key={size} value={size}>
-              {tSize(size)}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="price" className="text-sm font-medium">
-          {t("price")}
-        </label>
-        <input
-          id="price"
-          name="price"
-          type="number"
-          step="0.01"
-          min="0"
-          required
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="city" className="text-sm font-medium">
-          {t("city")}
-        </label>
-        <select
-          id="city"
-          name="city"
-          required
-          defaultValue={City.LA_PAZ}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        >
+      <FormField label={t("city")} htmlFor="city">
+        <Select id="city" name="city" required defaultValue={City.LA_PAZ}>
           {Object.values(City).map((city) => (
             <option key={city} value={city}>
               {tCity(city)}
             </option>
           ))}
-        </select>
-      </div>
+        </Select>
+      </FormField>
 
-      <hr className="border-zinc-200 dark:border-zinc-800" />
+      <hr className="border-border" />
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="topQuantity" className="text-sm font-medium">
-          {t("topQuantity")}
-        </label>
-        <input
-          id="topQuantity"
-          name="topQuantity"
-          type="number"
-          step="1"
-          min="0"
-          defaultValue={0}
-          required
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
-      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormField label={t("topQuantity")} htmlFor="topQuantity">
+          <Input
+            id="topQuantity"
+            name="topQuantity"
+            type="number"
+            step="1"
+            min="0"
+            defaultValue={0}
+            required
+          />
+        </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="bottomQuantity" className="text-sm font-medium">
-          {t("bottomQuantity")}
-        </label>
-        <input
-          id="bottomQuantity"
-          name="bottomQuantity"
-          type="number"
-          step="1"
-          min="0"
-          defaultValue={0}
-          required
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-        />
+        <FormField label={t("bottomQuantity")} htmlFor="bottomQuantity">
+          <Input
+            id="bottomQuantity"
+            name="bottomQuantity"
+            type="number"
+            step="1"
+            min="0"
+            defaultValue={0}
+            required
+          />
+        </FormField>
       </div>
 
       <div className="flex items-center gap-2">
@@ -186,53 +150,45 @@ export function SetProductForm() {
           type="checkbox"
           checked={includeCap}
           onChange={(e) => setIncludeCap(e.target.checked)}
-          className="h-4 w-4"
+          className="size-4 cursor-pointer accent-primary"
         />
-        <label htmlFor="includeCap" className="text-sm font-medium">
+        <label
+          htmlFor="includeCap"
+          className="cursor-pointer text-sm font-medium"
+        >
           {t("includeCap")}
         </label>
       </div>
 
       {includeCap && (
-        <div className="flex flex-col gap-1">
-          <label htmlFor="capQuantity" className="text-sm font-medium">
-            {t("capQuantity")}
-          </label>
-          <input
+        <FormField label={t("capQuantity")} htmlFor="capQuantity">
+          <Input
             id="capQuantity"
             name="capQuantity"
             type="number"
             step="1"
             min="0"
             defaultValue={0}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
           />
-        </div>
+        </FormField>
       )}
 
       {state?.success === false && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <Alert>
           {state.error === "Forbidden"
             ? tCommon("errorForbidden")
             : tCommon("errorValidation")}
-        </p>
+        </Alert>
       )}
 
       <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-zinc-50 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
-        >
+        <Button type="submit" disabled={pending}>
           {pending && <Loader2 className="size-4 animate-spin" />}
           {tCommon("create")}
-        </button>
-        <Link
-          href="/inventory/products"
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
-        >
+        </Button>
+        <ButtonLink href="/inventory/products" variant="secondary">
           {tCommon("cancel")}
-        </Link>
+        </ButtonLink>
       </div>
     </form>
   );

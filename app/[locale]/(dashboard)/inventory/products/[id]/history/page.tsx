@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { getProductById, listProductStockMovements } from "@/lib/inventory";
 import { Link } from "@/i18n/navigation";
 import { formatInTimezone } from "@/lib/timezone";
+import { ArrowLeft } from "lucide-react";
+import { MutedText } from "@/components/ui/muted-text";
 
 type Props = {
   params: Promise<{ locale: string; id: string }>;
@@ -34,7 +36,11 @@ export default async function ProductHistoryPage({ params }: Props) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/inventory/products" className="text-sm underline">
+        <Link
+          href="/inventory/products"
+          className="inline-flex items-center gap-1 text-sm underline"
+        >
+          <ArrowLeft className="size-4" />
           {t("backToList")}
         </Link>
         <h1 className="text-xl font-semibold">
@@ -43,14 +49,12 @@ export default async function ProductHistoryPage({ params }: Props) {
       </div>
 
       {movements.length === 0 ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {tCommon("empty")}
-        </p>
+        <MutedText>{tCommon("empty")}</MutedText>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 dark:border-zinc-800">
+              <tr className="border-b border-border">
                 <th className="p-2">{t("tableDate")}</th>
                 <th className="p-2">{t("tableBefore")}</th>
                 <th className="p-2">{t("tableAfter")}</th>
@@ -62,10 +66,7 @@ export default async function ProductHistoryPage({ params }: Props) {
             </thead>
             <tbody>
               {movements.map((movement) => (
-                <tr
-                  key={movement.id}
-                  className="border-b border-zinc-100 dark:border-zinc-900"
-                >
+                <tr key={movement.id} className="border-b border-border/50">
                   <td className="p-2 whitespace-nowrap">
                     {formatInTimezone(movement.createdAt, timeZone, locale, {
                       dateStyle: "short",

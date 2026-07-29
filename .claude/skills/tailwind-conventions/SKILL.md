@@ -43,6 +43,22 @@ dimension) — the existing forms already consistently use `gap-1` (label→
 control) and `gap-4`/`gap-6` (field→field, section→section); keep matching
 that rhythm rather than inventing new spacing values per component.
 
+## Global type scale
+
+The base type size is controlled in exactly one place: `html { font-size:
+106.25%; }` in `app/globals.css` (~17px instead of the 16px browser
+default — a client-requested "a bit bigger everywhere" bump). Every
+Tailwind text/spacing/icon-size utility is rem-based, so this one rule
+scales all of them uniformly. **Never** "make things bigger" by bumping
+individual `text-sm`→`text-base` classes across components — that's the
+per-component-override anti-pattern this project explicitly avoids (see
+[[feedback-centralized-colors]] for the same principle applied to color).
+If a *further* global size change is ever requested, adjust that one
+`html` rule; if a specific element genuinely needs to be larger than the
+rest of the UI (not just "bigger" generally), that's a deliberate
+one-off — use a real Tailwind text-size utility for it and don't touch
+the root rule.
+
 ## Colors: one centralized source of truth, never per-component literals
 
 **Hard rule**: every color value used anywhere in the app must be
@@ -117,6 +133,56 @@ A one-off className combination used exactly once does **not** need a
 component — three similar lines beats a premature abstraction. Extract
 only what `DESIGN_REVIEW.md` already identified as repeated across files,
 not speculatively.
+
+### Never override a primitive's utility by appending a conflicting class
+
+This project has no `clsx`/`tailwind-merge` — a primitive's `className`
+prop is concatenated onto its base classes as a plain string, **last in
+the string does not mean it wins**. Tailwind emits utilities into the
+compiled stylesheet in its own internal order, not source/JSX order, so
+appending e.g. `className="w-auto"` to override a primitive's built-in
+`w-full` is not reliable — the base class can silently stay in effect
+even though your override appears later in the string. This actually
+happened: `<Select className="w-auto">` on the Users list page's filter
+row didn't override `Select`'s default `w-full`, so both filter
+`<select>` elements stretched to 100% width and forced the whole filter
+row to wrap into a column instead of staying in a row.
+
+**The fix**: give the primitive a boolean prop for the variant instead of
+fighting it with a second utility class, so the conflicting class is
+never emitted in the first place. `Select` has `fullWidth` (default
+`true`) for exactly this — pass `fullWidth={false}` for an inline
+filter-row select instead of `className="w-auto"`. `Select` now applies
+this on a wrapper `<div>` around the `<select>` (needed anyway once the
+select grew a custom chevron icon — see below), which sidesteps the
+original conflict even more directly: the `<select>` itself is *always*
+`w-full` of that wrapper, so `fullWidth` never has to override anything
+on the same element at all. If another primitive ever needs the same
+kind of override (a default that a specific caller needs to turn off),
+add a boolean/variant prop to it rather than appending a same-property
+utility class and hoping it wins.
+
+### Form control height: `h-10` everywhere, not `py-2` alone
+
+`Input` and `Select` both set an explicit `h-10` (in addition to
+`px-3 py-2`) — don't drop this in favor of padding-only sizing. A
+`<select>`, a plain `<input>`, and an `<input type="date">` don't render
+at the same intrinsic height by default even with identical padding
+(each has its own native chrome — the select's arrow, the date input's
+calendar affordance — that browsers size slightly differently), so a
+filter row mixing all three with only `py-2` visibly misaligns. `h-10`
+on both primitives is the single source of truth for "every field in a
+filter row lines up," the same centralization principle as colors: fix
+it once in the primitive, not per filter-row usage.
+
+`Select` also replaces the browser's native dropdown arrow with a
+`lucide-react` `ChevronDown` (`appearance-none` on the `<select>`
+strips the native one, which renders flush against the edge with no
+control over its spacing — the "icon is too cramped" complaint that
+prompted this). The chevron rotates 180° on `peer-focus` for a bit of
+motion feedback when the dropdown opens — see `components/ui/select.tsx`
+for the exact structure (wrapper div + `peer` class + sibling icon,
+required for Tailwind's `peer-*` variant to apply).
 
 ## Interactive elements: always `cursor-pointer` + a hover state
 

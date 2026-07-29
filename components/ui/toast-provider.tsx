@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useTranslations } from "next-intl";
+import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 
 export type ToastType = "success" | "error" | "warning";
@@ -59,25 +60,28 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         aria-live="polite"
         className="pointer-events-none fixed bottom-4 right-4 z-50 flex w-full max-w-sm flex-col gap-2"
       >
-        {toasts.map((toast) => (
-          <ToastItem
-            key={toast.id}
-            toast={toast}
-            onDismiss={() => dismiss(toast.id)}
-          />
-        ))}
+        <AnimatePresence>
+          {toasts.map((toast) => (
+            <ToastItem
+              key={toast.id}
+              toast={toast}
+              onDismiss={() => dismiss(toast.id)}
+            />
+          ))}
+        </AnimatePresence>
       </div>
     </ToastContext.Provider>
   );
 }
 
+// bg-<token>/10 keeps the surface a tint of the status color instead of
+// a solid fill, with the full-strength token for the border/text — same
+// idea across all three, semantic tokens only (see
+// .claude/skills/theming-user-settings/SKILL.md).
 const TOAST_STYLES: Record<ToastType, string> = {
-  success:
-    "border-green-600 bg-green-50 text-green-900 dark:border-green-500 dark:bg-green-950 dark:text-green-100",
-  error:
-    "border-red-600 bg-red-50 text-red-900 dark:border-red-500 dark:bg-red-950 dark:text-red-100",
-  warning:
-    "border-amber-600 bg-amber-50 text-amber-900 dark:border-amber-500 dark:bg-amber-950 dark:text-amber-100",
+  success: "border-success bg-success/10 text-success",
+  error: "border-danger bg-danger/10 text-danger",
+  warning: "border-warning bg-warning/10 text-warning",
 };
 
 function ToastItem({
@@ -99,8 +103,13 @@ function ToastItem({
   }, []);
 
   return (
-    <div
+    <motion.div
       role="status"
+      layout
+      initial={{ opacity: 0, x: 16 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 16 }}
+      transition={{ duration: 0.2 }}
       className={`pointer-events-auto flex items-start gap-3 rounded-md border px-4 py-3 text-sm shadow-lg ${TOAST_STYLES[toast.type]}`}
     >
       <span className="flex-1">{toast.message}</span>
@@ -108,10 +117,10 @@ function ToastItem({
         type="button"
         onClick={onDismiss}
         aria-label={t("dismiss")}
-        className="leading-none opacity-70 hover:opacity-100"
+        className="cursor-pointer leading-none opacity-70 transition-opacity duration-200 ease-in-out hover:opacity-100"
       >
         <X className="size-4" />
       </button>
-    </div>
+    </motion.div>
   );
 }
