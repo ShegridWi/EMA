@@ -105,5 +105,45 @@
     "bottomQuantity": "Starting quantity — Bottom",
     "includeCap": "Includes a cap?",
     "capQuantity": "Starting quantity — Cap"
+  },
+  "SaleType": {
+    "CASH": "Cash",
+    "ORDER": "Order",
+    "RESERVATION": "Reservation"
+  },
+  "PaymentMethod": {
+    "QR": "QR",
+    "CASH": "Cash"
+  },
+  "Sales": {
+    "title": "Sales",
+    "addNew": "Register sale",
+    "newTitle": "Register sale",
+    "backToList": "Back to history",
+    "product": "Product",
+    "selectProduct": "Select a product",
+    "unitAvailable": "{count} available",
+    "setNoStockShown": "Set — check each piece's stock in Finished product",
+    "quantity": "Quantity",
+    "unitPrice": "Sale price",
+    "city": "City",
+    "saleDate": "Sale date",
+    "saleType": "Sale type",
+    "paymentMethod": "Payment method",
+    "qrPlaceholder": "Business QR (add the real image later)",
+    "amountPaid": "Amount paid",
+    "expectedDate": "Expected delivery/payment date",
+    "customerName": "Customer name (optional)",
+    "customerPhone": "Customer phone (optional)",
+    "notes": "Notes (optional)",
+    "submit": "Register sale",
+    "submitting": "Registering...",
+    "errorInsufficientStock": "Not enough stock for that quantity.",
+    "historyTitle": "Sales history",
+    "seller": "Seller",
+    "totalPrice": "Total",
+    "balanceDue": "Balance due",
+    "kindSet": "Set",
+    "kindUnit": "Unit"
   }
 }

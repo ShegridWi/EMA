@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { writeAuditLog } from "@/lib/audit";
 import type { City, PieceRole } from "@/app/generated/prisma/enums";
-import type { Material, Product } from "@/app/generated/prisma/client";
+import type { Material, Product, Sale } from "@/app/generated/prisma/client";
 import type {
   CreateMaterialInput,
   UpdateMaterialInput,
@@ -11,11 +11,12 @@ import type {
   CreateSetProductInput,
   UpdateProductInput,
 } from "@/lib/validations/product";
+import type { CreateSaleInput } from "@/lib/validations/sale";
 
 // This is the only file allowed to call `prisma.material.*` /
-// `prisma.product.*` (CLAUDE.md section 7). Every mutation wraps the
-// write(s) and the MovementLog insert(s) in the same `prisma.$transaction`,
-// so they commit or roll back together.
+// `prisma.product.*` / `prisma.sale.*` (CLAUDE.md section 7). Every
+// mutation wraps the write(s) and the MovementLog insert(s) in the same
+// `prisma.$transaction`, so they commit or roll back together.
 
 export type SerializedMaterial = Omit<
   Material,
@@ -325,5 +326,170 @@ export async function deleteProduct(id: string, userId: string) {
     });
 
     return product;
+  });
+}
+
+// ---------------------------------------------------------------------
+// Sale
+// ---------------------------------------------------------------------
+
+export type SerializedSale = Omit<
+  Sale,
+  "unitPrice" | "totalPrice" | "amountPaid" | "balanceDue"
+> & {
+  unitPrice: string;
+  totalPrice: string;
+  amountPaid: string;
+  balanceDue: string;
+};
+
+export function serializeSale(sale: Sale): SerializedSale {
+  return {
+    ...sale,
+    unitPrice: sale.unitPrice.toString(),
+    totalPrice: sale.totalPrice.toString(),
+    amountPaid: sale.amountPaid.toString(),
+    balanceDue: sale.balanceDue.toString(),
+  };
+}
+
+// Pure calculation, no Prisma involved — kept separate so it can be unit
+// tested directly (CLAUDE.md section 7: money-touching code needs tests).
+// Rounds to 2 decimals (currency) — plain JS float math otherwise leaves
+// drift (e.g. `99.99 - 50` is `49.989999999999995`), which would then get
+// persisted as-is into the Decimal columns.
+function roundCurrency(amount: number): number {
+  return Math.round((amount + Number.EPSILON) * 100) / 100;
+}
+
+export function calculateSaleTotals(
+  quantity: number,
+  unitPrice: number,
+  amountPaid: number,
+) {
+  const totalPrice = roundCurrency(quantity * unitPrice);
+  const balanceDue = roundCurrency(totalPrice - amountPaid);
+  return { totalPrice, balanceDue };
+}
+
+export class InsufficientStockError extends Error {
+  constructor(public readonly productId: string) {
+    super(`Insufficient stock for product ${productId}`);
+    this.name = "InsufficientStockError";
+  }
+}
+
+export type SaleFilters = {
+  sellerId?: string;
+};
+
+export function listSales(filters: SaleFilters = {}) {
+  return prisma.sale.findMany({
+    where: {
+      deletedAt: null,
+      ...(filters.sellerId ? { sellerId: filters.sellerId } : {}),
+    },
+    // Only the seller's name, never the full User row (passwordHash etc.)
+    include: { seller: { select: { name: true } } },
+    orderBy: { saleDate: "desc" },
+  });
+}
+
+export function getSaleById(id: string) {
+  return prisma.sale.findFirst({ where: { id, deletedAt: null } });
+}
+
+/**
+ * Registers a sale and deducts stock in one transaction
+ * (01-business-rules.md #3). For a `kind = UNIT` product, only that row's
+ * quantity is checked/decremented. For a `kind = SET` product, every
+ * non-deleted piece (Top/Bottom/optional Cap) must have enough stock —
+ * all pieces are decremented together, or none are (throws
+ * InsufficientStockError, which rolls back the transaction and is caught
+ * by the calling Server Action as a typed error, never an unhandled
+ * exception).
+ */
+export async function createSale(input: CreateSaleInput, sellerId: string) {
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.findFirst({
+      where: { id: input.productId, deletedAt: null },
+    });
+    if (!product) {
+      throw new InsufficientStockError(input.productId);
+    }
+
+    if (product.kind === "UNIT") {
+      if (product.quantity < input.quantity) {
+        throw new InsufficientStockError(product.id);
+      }
+      await tx.product.update({
+        where: { id: product.id },
+        data: { quantity: { decrement: input.quantity } },
+      });
+    } else {
+      const pieces = await tx.product.findMany({
+        where: { setId: product.id, deletedAt: null },
+      });
+      const hasEnoughStock =
+        pieces.length > 0 &&
+        pieces.every((piece) => piece.quantity >= input.quantity);
+      if (!hasEnoughStock) {
+        throw new InsufficientStockError(product.id);
+      }
+      for (const piece of pieces) {
+        await tx.product.update({
+          where: { id: piece.id },
+          data: { quantity: { decrement: input.quantity } },
+        });
+      }
+    }
+
+    const { totalPrice, balanceDue } = calculateSaleTotals(
+      input.quantity,
+      input.unitPrice,
+      input.amountPaid,
+    );
+
+    const sale = await tx.sale.create({
+      data: {
+        productId: product.id,
+        // Denormalized at sale time (01-business-rules.md #3) — these
+        // must NOT be re-derived from Product later, the product can
+        // change or be deleted afterward.
+        kind: product.kind,
+        description: product.description,
+        color: product.color,
+        size: product.size,
+        quantity: input.quantity,
+        unitPrice: input.unitPrice,
+        totalPrice,
+        city: input.city,
+        saleDate: input.saleDate,
+        saleType: input.saleType,
+        paymentMethod: input.paymentMethod,
+        amountPaid: input.amountPaid,
+        balanceDue,
+        deliveryDate: input.deliveryDate,
+        sellerId,
+        customerName: input.customerName,
+        customerPhone: input.customerPhone,
+        notes: input.notes,
+      },
+    });
+
+    await writeAuditLog(tx, {
+      userId: sellerId,
+      action: "CREATE_SALE",
+      entityType: "Sale",
+      entityId: sale.id,
+      metadata: {
+        productId: product.id,
+        kind: product.kind,
+        quantity: input.quantity,
+        totalPrice,
+      },
+    });
+
+    return sale;
   });
 }

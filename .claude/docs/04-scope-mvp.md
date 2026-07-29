@@ -35,17 +35,9 @@ These are points where a reasonable decision was made to move forward, but
 **they aren't 100% defined in the original brief** and are worth
 validating:
 
-1. **Order vs. Reservation**: are these two distinct sale types (`ORDER`
-   with a delivery date vs. `RESERVATION` with a partial payment) or the
-   same concept under different names? Currently modeled as two separate
-   enums but with overlapping fields (`amountPaid`, `balanceDue`).
 3. **Seller and city**: is a seller fixed to one city (La Paz or Santa
    Cruz), or can they sell/view inventory for both? Affects the `User.city`
    model and default filters.
-4. **Customer data on the sale**: does the customer's name/phone need to be
-   recorded, even optionally, especially for orders and reservations (to
-   be able to contact them when ready)? Recommended: yes, at least as
-   optional fields.
 7. **Weekly report email**: which address(es) does it go to? All
    registered admins, or one fixed business mailbox?
 
@@ -67,6 +59,15 @@ Resolved:
   number for now. Revisit if the business asks for that aggregate later
   (it would be a calculated field: min across the set's pieces, not a
   stored value).
+- ~~**Order vs. Reservation**~~ — confirmed for `feature/sales`: these are
+  two distinct flows, kept as separate `SaleType` enum values (`ORDER`,
+  `RESERVATION`) exactly as modeled in `prisma/schema.prisma`. `ORDER` is
+  a large/custom sale with an estimated delivery date; `RESERVATION` is a
+  partial payment with a pending balance, not necessarily a large order.
+- ~~**Customer data on the sale**~~ — confirmed for `feature/sales`:
+  `customerName`/`customerPhone` are collected as optional fields on the
+  sale form (all sale types, not just orders/reservations), matching the
+  nullable fields already in the `Sale` model.
 
 None of these block starting the project (they were modeled with
 reasonable defaults), but they should be resolved before building the

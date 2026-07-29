@@ -105,5 +105,45 @@
     "bottomQuantity": "Cantidad inicial — Bottom",
     "includeCap": "¿Incluye gorro?",
     "capQuantity": "Cantidad inicial — Gorro"
+  },
+  "SaleType": {
+    "CASH": "Contado",
+    "ORDER": "Pedido",
+    "RESERVATION": "Reserva"
+  },
+  "PaymentMethod": {
+    "QR": "QR",
+    "CASH": "Efectivo"
+  },
+  "Sales": {
+    "title": "Ventas",
+    "addNew": "Registrar venta",
+    "newTitle": "Registrar venta",
+    "backToList": "Volver al historial",
+    "product": "Producto",
+    "selectProduct": "Selecciona un producto",
+    "unitAvailable": "{count} disponibles",
+    "setNoStockShown": "Conjunto — revisa el stock de cada pieza en Producto terminado",
+    "quantity": "Cantidad",
+    "unitPrice": "Precio de venta",
+    "city": "Ciudad",
+    "saleDate": "Fecha de venta",
+    "saleType": "Tipo de venta",
+    "paymentMethod": "Método de pago",
+    "qrPlaceholder": "QR del negocio (agregar imagen real más adelante)",
+    "amountPaid": "Monto pagado",
+    "expectedDate": "Fecha estimada de entrega/pago",
+    "customerName": "Nombre del cliente (opcional)",
+    "customerPhone": "Teléfono del cliente (opcional)",
+    "notes": "Notas (opcional)",
+    "submit": "Registrar venta",
+    "submitting": "Registrando...",
+    "errorInsufficientStock": "No hay stock suficiente para esta cantidad.",
+    "historyTitle": "Historial de ventas",
+    "seller": "Vendedor/a",
+    "totalPrice": "Total",
+    "balanceDue": "Saldo pendiente",
+    "kindSet": "Conjunto",
+    "kindUnit": "Unidad"
   }
 }
