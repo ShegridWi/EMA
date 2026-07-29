@@ -3,17 +3,35 @@ import { auth } from "@/lib/auth";
 import { listMaterials } from "@/lib/inventory";
 import { Link } from "@/i18n/navigation";
 import { DeleteMaterialButton } from "@/components/materials/delete-material-button";
+import { DeactivateMaterialButton } from "@/components/materials/deactivate-material-button";
+import { ReactivateMaterialButton } from "@/components/materials/reactivate-material-button";
 import { formatCurrency } from "@/lib/currency";
 import { zonedTimeToUtc } from "@/lib/timezone";
 
 type Props = {
-  searchParams: Promise<{ q?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ q?: string; from?: string; to?: string; tab?: string }>;
 };
 
+// Preserves the current filters across the tab links and the current
+// tab across the filter form submit — same idea as the Products list's
+// buildHref (app/[locale]/(dashboard)/inventory/products/page.tsx).
+function buildHref(
+  filters: { q?: string; from?: string; to?: string },
+  tab?: "inactive",
+) {
+  const query: Record<string, string> = {};
+  if (filters.q) query.q = filters.q;
+  if (filters.from) query.from = filters.from;
+  if (filters.to) query.to = filters.to;
+  if (tab) query.tab = tab;
+  return { pathname: "/inventory/materials" as const, query };
+}
+
 export default async function MaterialsPage({ searchParams }: Props) {
-  const { q, from, to } = await searchParams;
+  const { q, from, to, tab } = await searchParams;
   const session = await auth();
   const isAdmin = session?.user.role === "ADMIN";
+  const isInactiveTab = tab === "inactive";
 
   // Date-only inputs interpreted as midnight in *this user's* configured
   // timezone, not the server's local time (05-nextjs-conventions.md
@@ -29,7 +47,12 @@ export default async function MaterialsPage({ searchParams }: Props) {
       })
     : undefined;
 
-  const materials = await listMaterials({ search: q, createdFrom, createdTo });
+  const materials = await listMaterials({
+    search: q,
+    createdFrom,
+    createdTo,
+    active: !isInactiveTab,
+  });
 
   const t = await getTranslations("Materials");
   const tCommon = await getTranslations("Common");
@@ -50,7 +73,31 @@ export default async function MaterialsPage({ searchParams }: Props) {
         )}
       </div>
 
+      <div className="flex gap-4 border-b border-zinc-200 dark:border-zinc-800">
+        <Link
+          href={buildHref({ q, from, to })}
+          className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+            isInactiveTab
+              ? "border-transparent text-zinc-500 dark:text-zinc-400"
+              : "border-zinc-900 dark:border-zinc-50"
+          }`}
+        >
+          {t("tabActive")}
+        </Link>
+        <Link
+          href={buildHref({ q, from, to }, "inactive")}
+          className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+            isInactiveTab
+              ? "border-zinc-900 dark:border-zinc-50"
+              : "border-transparent text-zinc-500 dark:text-zinc-400"
+          }`}
+        >
+          {t("tabInactive")}
+        </Link>
+      </div>
+
       <form className="flex flex-wrap items-end gap-2">
+        {isInactiveTab && <input type="hidden" name="tab" value="inactive" />}
         <input
           type="search"
           name="q"
@@ -133,6 +180,11 @@ export default async function MaterialsPage({ searchParams }: Props) {
                         >
                           {tCommon("edit")}
                         </Link>
+                        {material.active ? (
+                          <DeactivateMaterialButton id={material.id} />
+                        ) : (
+                          <ReactivateMaterialButton id={material.id} />
+                        )}
                         <DeleteMaterialButton id={material.id} />
                       </div>
                     </td>

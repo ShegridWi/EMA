@@ -86,15 +86,17 @@ export type MaterialFilters = {
   // viewing user's timezone — this layer only ever deals in UTC).
   createdFrom?: Date;
   createdTo?: Date;
+  active?: boolean;
 };
 
 export function listMaterials(filters: MaterialFilters = {}) {
-  const { search, city, createdFrom, createdTo } = filters;
+  const { search, city, createdFrom, createdTo, active } = filters;
 
   return prisma.material.findMany({
     where: {
       deletedAt: null,
       ...(city ? { city } : {}),
+      ...(active !== undefined ? { active } : {}),
       ...(createdFrom || createdTo
         ? {
             createdAt: {
@@ -179,6 +181,53 @@ export async function deleteMaterial(id: string, userId: string) {
       entityType: "Material",
       entityId: material.id,
       metadata: {},
+    });
+
+    return material;
+  });
+}
+
+// `active` (phase 9) is a separate, reversible concept from the
+// deletedAt soft delete above — same pattern as Product.active
+// (deactivateProduct/reactivateProduct further down this file).
+export async function deactivateMaterial(id: string, userId: string) {
+  return prisma.$transaction(async (tx) => {
+    const material = await tx.material.update({
+      where: { id },
+      data: { active: false },
+    });
+
+    await writeAuditLog(tx, {
+      userId,
+      action: "DEACTIVATE_MATERIAL",
+      entityType: "Material",
+      entityId: material.id,
+      metadata: {},
+    });
+
+    return material;
+  });
+}
+
+// `reason` is an optional free-text note on why the material is being
+// restored — same idea as reactivateProduct's reason.
+export async function reactivateMaterial(
+  id: string,
+  userId: string,
+  reason?: string,
+) {
+  return prisma.$transaction(async (tx) => {
+    const material = await tx.material.update({
+      where: { id },
+      data: { active: true },
+    });
+
+    await writeAuditLog(tx, {
+      userId,
+      action: "REACTIVATE_MATERIAL",
+      entityType: "Material",
+      entityId: material.id,
+      metadata: reason ? { reason } : {},
     });
 
     return material;

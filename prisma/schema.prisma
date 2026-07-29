@@ -91,6 +91,8 @@ enum MovementAction {
   CREATE_MATERIAL
   UPDATE_MATERIAL
   DELETE_MATERIAL
+  DEACTIVATE_MATERIAL
+  REACTIVATE_MATERIAL
   CREATE_PRODUCT
   UPDATE_PRODUCT
   DELETE_PRODUCT
@@ -157,6 +159,9 @@ model Material {
   unit          Unit
   city          City
   purchasePrice Decimal   @db.Decimal(10, 2)
+  // Reversible toggle (phase 9), separate from deletedAt below — same
+  // pattern as Product.active (02-data-model.md).
+  active        Boolean   @default(true)
   createdById   String
   createdBy     User      @relation(fields: [createdById], references: [id])
   createdAt     DateTime  @default(now())

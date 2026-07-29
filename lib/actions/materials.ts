@@ -4,11 +4,15 @@ import { auth } from "@/lib/auth";
 import {
   createMaterialSchema,
   updateMaterialSchema,
+  deactivateMaterialSchema,
+  reactivateMaterialSchema,
 } from "@/lib/validations/material";
 import {
   createMaterial,
   updateMaterial,
   deleteMaterial,
+  deactivateMaterial,
+  reactivateMaterial,
   serializeMaterial,
 } from "@/lib/inventory";
 import { z } from "zod";
@@ -57,5 +61,39 @@ export async function deleteMaterialAction(input: unknown) {
   }
 
   const material = await deleteMaterial(parsed.data.id, session.user.id);
+  return { success: true as const, data: serializeMaterial(material) };
+}
+
+export async function deactivateMaterialAction(input: unknown) {
+  const session = await auth();
+  if (session?.user.role !== "ADMIN") {
+    return { success: false as const, error: "Forbidden" };
+  }
+
+  const parsed = deactivateMaterialSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false as const, error: parsed.error.flatten() };
+  }
+
+  const material = await deactivateMaterial(parsed.data.id, session.user.id);
+  return { success: true as const, data: serializeMaterial(material) };
+}
+
+export async function reactivateMaterialAction(input: unknown) {
+  const session = await auth();
+  if (session?.user.role !== "ADMIN") {
+    return { success: false as const, error: "Forbidden" };
+  }
+
+  const parsed = reactivateMaterialSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false as const, error: parsed.error.flatten() };
+  }
+
+  const material = await reactivateMaterial(
+    parsed.data.id,
+    session.user.id,
+    parsed.data.reason,
+  );
   return { success: true as const, data: serializeMaterial(material) };
 }
