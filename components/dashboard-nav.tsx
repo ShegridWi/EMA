@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: "/reports", key: "reports", adminOnly: true },
   { href: "/users", key: "users", adminOnly: true },
   { href: "/movement-log", key: "movementLog", adminOnly: true },
+  { href: "/settings", key: "settings", adminOnly: false },
 ] as const;
 
 export async function DashboardNav() {

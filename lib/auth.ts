@@ -2,7 +2,8 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/password";
-import type { Role, City } from "@/app/generated/prisma/enums";
+import { getOrCreateUserSettings } from "@/lib/user-settings";
+import type { Role, City, Theme, Locale } from "@/app/generated/prisma/enums";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt" },
@@ -32,12 +33,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
+        // Auto-creates a default UserSettings row on first login if one
+        // doesn't exist yet (existing users from before this feature) —
+        // see lib/user-settings.ts.
+        const settings = await getOrCreateUserSettings(user.id);
+
         return {
           id: user.id,
           name: user.name,
           email: user.email,
           role: user.role,
           city: user.city,
+          settings: {
+            timezone: settings.timezone,
+            theme: settings.theme,
+            locale: settings.locale,
+          },
         };
       },
     }),
@@ -48,16 +59,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id;
         token.role = user.role;
         token.city = user.city;
+        token.settings = user.settings;
       }
       return token;
     },
     session({ session, token }) {
       // `token` is typed as Record<string, unknown> upstream (see
       // types/next-auth.d.ts) — the shape is guaranteed by the jwt()
-      // callback above, which always sets these three fields together.
+      // callback above, which always sets these fields together.
       session.user.id = token.id as string;
       session.user.role = token.role as Role;
       session.user.city = token.city as City;
+      session.user.settings = token.settings as {
+        timezone: string;
+        theme: Theme;
+        locale: Locale;
+      };
       return session;
     },
   },

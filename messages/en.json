@@ -32,6 +32,7 @@
     "reports": "Reports",
     "users": "Users",
     "movementLog": "Movement log",
+    "settings": "Settings",
     "signOut": "Sign out"
   },
   "Theme": {
@@ -270,5 +271,13 @@
     "productsEmpty": "No products registered.",
     "weeklyEmailSubject": "EMA weekly report — {from} to {to}",
     "weeklyEmailBody": "Attached is the weekly sales and inventory report for {from} – {to}."
+  },
+  "Settings": {
+    "title": "Settings",
+    "timezone": "Timezone",
+    "theme": "Theme",
+    "language": "Language",
+    "languageEs": "Español",
+    "languageEn": "English"
   }
 }

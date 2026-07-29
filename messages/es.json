@@ -32,6 +32,7 @@
     "reports": "Reportes",
     "users": "Usuarios",
     "movementLog": "Log de movimientos",
+    "settings": "Ajustes",
     "signOut": "Cerrar sesión"
   },
   "Theme": {
@@ -270,5 +271,13 @@
     "productsEmpty": "No hay productos registrados.",
     "weeklyEmailSubject": "Reporte semanal EMA — {from} a {to}",
     "weeklyEmailBody": "Adjunto el reporte semanal de ventas e inventario correspondiente al {from} – {to}."
+  },
+  "Settings": {
+    "title": "Ajustes",
+    "timezone": "Zona horaria",
+    "theme": "Tema",
+    "language": "Idioma",
+    "languageEs": "Español",
+    "languageEn": "English"
   }
 }
