@@ -1,15 +1,21 @@
 import { prisma } from "@/lib/db";
 import { writeAuditLog } from "@/lib/audit";
-import type { City } from "@/app/generated/prisma/enums";
-import type { Material } from "@/app/generated/prisma/client";
+import type { City, PieceRole } from "@/app/generated/prisma/enums";
+import type { Material, Product } from "@/app/generated/prisma/client";
 import type {
   CreateMaterialInput,
   UpdateMaterialInput,
 } from "@/lib/validations/material";
+import type {
+  CreateUnitProductInput,
+  CreateSetProductInput,
+  UpdateProductInput,
+} from "@/lib/validations/product";
 
-// This is the only file allowed to call `prisma.material.*` (CLAUDE.md
-// section 7). Every mutation wraps the write and the MovementLog insert
-// in the same `prisma.$transaction`, so they commit or roll back together.
+// This is the only file allowed to call `prisma.material.*` /
+// `prisma.product.*` (CLAUDE.md section 7). Every mutation wraps the
+// write(s) and the MovementLog insert(s) in the same `prisma.$transaction`,
+// so they commit or roll back together.
 
 export type SerializedMaterial = Omit<
   Material,
@@ -123,5 +129,201 @@ export async function deleteMaterial(id: string, userId: string) {
     });
 
     return material;
+  });
+}
+
+// ---------------------------------------------------------------------
+// Product (finished product — sets and individual pieces)
+// ---------------------------------------------------------------------
+
+export type SerializedProduct = Omit<Product, "price"> & { price: string };
+
+export function serializeProduct(product: Product): SerializedProduct {
+  return { ...product, price: product.price.toString() };
+}
+
+export type ProductFilters = {
+  search?: string;
+  city?: City;
+};
+
+export function listProducts(filters: ProductFilters = {}) {
+  const { search, city } = filters;
+
+  return prisma.product.findMany({
+    where: {
+      deletedAt: null,
+      ...(city ? { city } : {}),
+      ...(search
+        ? {
+            OR: [
+              { description: { contains: search, mode: "insensitive" } },
+              { color: { contains: search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export function getProductById(id: string) {
+  return prisma.product.findFirst({ where: { id, deletedAt: null } });
+}
+
+export async function createUnitProduct(
+  input: CreateUnitProductInput,
+  userId: string,
+) {
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.create({
+      data: { ...input, kind: "UNIT", createdById: userId },
+    });
+
+    await writeAuditLog(tx, {
+      userId,
+      action: "CREATE_PRODUCT",
+      entityType: "Product",
+      entityId: product.id,
+      metadata: input,
+    });
+
+    return product;
+  });
+}
+
+// Suffix appended to the set's own description to name each generated
+// piece (e.g. "Pijama Azul M" -> "Pijama Azul M - Top"). This is stored
+// data the admin can edit afterward like any other product, not UI
+// chrome, so it isn't run through next-intl.
+const PIECE_DESCRIPTION_SUFFIX: Record<Extract<PieceRole, "TOP" | "BOTTOM" | "CAP">, string> = {
+  TOP: "Top",
+  BOTTOM: "Bottom",
+  CAP: "Gorro",
+};
+
+/**
+ * Creates a SET product and its Top/Bottom (+ optional Cap) UNIT pieces
+ * in one transaction (01-business-rules.md #2a). The SET row is a
+ * grouping/metadata record only — it carries no stock of its own
+ * (02-data-model.md "Design note"), so its `quantity` is always 0; the
+ * real stock lives on the pieces. Whether to also show a computed
+ * "N complete sets available" number was an open assumption
+ * (04-scope-mvp.md), decided against for now — pieces are listed with
+ * their own stock instead.
+ *
+ * One MovementLog entry is written per created row (the set + each
+ * piece), matching the "one log entry per entity row" pattern used
+ * everywhere else in this file.
+ */
+export async function createSetProduct(
+  input: CreateSetProductInput,
+  userId: string,
+) {
+  const {
+    topQuantity,
+    bottomQuantity,
+    includeCap,
+    capQuantity,
+    ...setFields
+  } = input;
+
+  return prisma.$transaction(async (tx) => {
+    const set = await tx.product.create({
+      data: { ...setFields, kind: "SET", quantity: 0, createdById: userId },
+    });
+
+    await writeAuditLog(tx, {
+      userId,
+      action: "CREATE_PRODUCT",
+      entityType: "Product",
+      entityId: set.id,
+      metadata: { ...setFields, kind: "SET" },
+    });
+
+    const pieceSpecs: { pieceRole: PieceRole; quantity: number }[] = [
+      { pieceRole: "TOP", quantity: topQuantity },
+      { pieceRole: "BOTTOM", quantity: bottomQuantity },
+    ];
+    if (includeCap) {
+      pieceSpecs.push({ pieceRole: "CAP", quantity: capQuantity });
+    }
+
+    const pieces = [];
+    for (const spec of pieceSpecs) {
+      const piece = await tx.product.create({
+        data: {
+          kind: "UNIT",
+          description: `${setFields.description} - ${PIECE_DESCRIPTION_SUFFIX[spec.pieceRole as "TOP" | "BOTTOM" | "CAP"]}`,
+          color: setFields.color,
+          size: setFields.size,
+          quantity: spec.quantity,
+          price: setFields.price,
+          city: setFields.city,
+          setId: set.id,
+          pieceRole: spec.pieceRole,
+          createdById: userId,
+        },
+      });
+
+      await writeAuditLog(tx, {
+        userId,
+        action: "CREATE_PRODUCT",
+        entityType: "Product",
+        entityId: piece.id,
+        metadata: {
+          pieceRole: spec.pieceRole,
+          quantity: spec.quantity,
+          setId: set.id,
+        },
+      });
+
+      pieces.push(piece);
+    }
+
+    return { set, pieces };
+  });
+}
+
+export async function updateProduct(input: UpdateProductInput, userId: string) {
+  const { id, ...data } = input;
+
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.update({
+      where: { id },
+      data,
+    });
+
+    await writeAuditLog(tx, {
+      userId,
+      action: "UPDATE_PRODUCT",
+      entityType: "Product",
+      entityId: product.id,
+      metadata: data,
+    });
+
+    return product;
+  });
+}
+
+export async function deleteProduct(id: string, userId: string) {
+  // Soft-deletes only this row. Deleting a SET's container row does NOT
+  // cascade to its pieces — each piece is independently sellable
+  // (01-business-rules.md #2a point 3) and keeps its own lifecycle.
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    await writeAuditLog(tx, {
+      userId,
+      action: "DELETE_PRODUCT",
+      entityType: "Product",
+      entityId: product.id,
+      metadata: {},
+    });
+
+    return product;
   });
 }

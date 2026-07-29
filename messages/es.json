@@ -54,6 +54,14 @@
     "UNITS": "Unidades",
     "ROLLS": "Rollos"
   },
+  "Size": {
+    "XS": "XS",
+    "S": "S",
+    "M": "M",
+    "L": "L",
+    "XL": "XL",
+    "XXL": "XXL"
+  },
   "Materials": {
     "title": "Confección",
     "addNew": "Nuevo material",
@@ -69,5 +77,33 @@
     "purchasePrice": "Precio de compra",
     "colorOptional": "Color (opcional)",
     "backToList": "Volver al listado"
+  },
+  "PieceRole": {
+    "TOP": "Top",
+    "BOTTOM": "Bottom",
+    "CAP": "Gorro"
+  },
+  "Products": {
+    "title": "Producto terminado",
+    "addNewUnit": "Nueva pieza",
+    "addNewSet": "Nuevo conjunto",
+    "newUnitTitle": "Nueva pieza individual",
+    "newSetTitle": "Nuevo conjunto",
+    "editTitle": "Editar producto",
+    "searchPlaceholder": "Buscar por descripción o color...",
+    "description": "Descripción",
+    "color": "Color",
+    "size": "Talla",
+    "quantity": "Cantidad",
+    "price": "Precio",
+    "city": "Ciudad",
+    "kindSet": "Conjunto",
+    "kindUnit": "Pieza",
+    "setsSectionTitle": "Conjuntos",
+    "standaloneSectionTitle": "Piezas individuales",
+    "topQuantity": "Cantidad inicial — Top",
+    "bottomQuantity": "Cantidad inicial — Bottom",
+    "includeCap": "¿Incluye gorro?",
+    "capQuantity": "Cantidad inicial — Gorro"
   }
 }
