@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { writeAuditLog } from "@/lib/audit";
 import type { City } from "@/app/generated/prisma/enums";
+import type { Material } from "@/app/generated/prisma/client";
 import type {
   CreateMaterialInput,
   UpdateMaterialInput,
@@ -9,6 +10,27 @@ import type {
 // This is the only file allowed to call `prisma.material.*` (CLAUDE.md
 // section 7). Every mutation wraps the write and the MovementLog insert
 // in the same `prisma.$transaction`, so they commit or roll back together.
+
+export type SerializedMaterial = Omit<
+  Material,
+  "quantity" | "purchasePrice"
+> & {
+  quantity: string;
+  purchasePrice: string;
+};
+
+// Prisma's `Decimal` is a class instance — React Server Components can't
+// send it across the Server Action boundary to a Client Component
+// ("Only plain objects can be passed... Decimal objects are not
+// supported"). Anything returned as a Server Action's `data` must go
+// through this first.
+export function serializeMaterial(material: Material): SerializedMaterial {
+  return {
+    ...material,
+    quantity: material.quantity.toString(),
+    purchasePrice: material.purchasePrice.toString(),
+  };
+}
 
 export type MaterialFilters = {
   search?: string;

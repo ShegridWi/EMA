@@ -9,6 +9,7 @@ import {
   createMaterial,
   updateMaterial,
   deleteMaterial,
+  serializeMaterial,
 } from "@/lib/inventory";
 import { z } from "zod";
 
@@ -24,7 +25,7 @@ export async function createMaterialAction(input: unknown) {
   }
 
   const material = await createMaterial(parsed.data, session.user.id);
-  return { success: true as const, data: material };
+  return { success: true as const, data: serializeMaterial(material) };
 }
 
 export async function updateMaterialAction(input: unknown) {
@@ -39,7 +40,7 @@ export async function updateMaterialAction(input: unknown) {
   }
 
   const material = await updateMaterial(parsed.data, session.user.id);
-  return { success: true as const, data: material };
+  return { success: true as const, data: serializeMaterial(material) };
 }
 
 const deleteMaterialSchema = z.object({ id: z.uuid() });
@@ -56,5 +57,5 @@ export async function deleteMaterialAction(input: unknown) {
   }
 
   const material = await deleteMaterial(parsed.data.id, session.user.id);
-  return { success: true as const, data: material };
+  return { success: true as const, data: serializeMaterial(material) };
 }
