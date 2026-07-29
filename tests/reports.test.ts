@@ -55,34 +55,49 @@ describe("summarizeSales", () => {
 });
 
 describe("getWeekRange", () => {
-  // 2026-01-05 is a Monday, 2026-01-10 is the following Saturday.
+  // 2026-01-05 is a Monday, 2026-01-10 is the following Saturday (in
+  // America/La_Paz — the default). Reference instants are constructed
+  // at noon UTC, not via the local Date constructor: getWeekRange is
+  // now timezone-aware (it asks "what day is it in `timeZone`", not the
+  // test-runner machine's own timezone — see lib/reports.ts), so a
+  // local-time reference would make these tests' outcome depend on
+  // whatever timezone happens to run them. Noon UTC is safely the same
+  // calendar day in La_Paz (UTC-4) for every date used here.
   it("a Wednesday reference resolves to that week's Monday–Saturday", () => {
-    const range = getWeekRange(new Date(2026, 0, 7)); // Wed
-    expect(range.from.getFullYear()).toBe(2026);
-    expect(range.from.getMonth()).toBe(0);
-    expect(range.from.getDate()).toBe(5);
-    expect([range.from.getHours(), range.from.getMinutes(), range.from.getSeconds(), range.from.getMilliseconds()]).toEqual([0, 0, 0, 0]);
-
-    expect(range.to.getDate()).toBe(10);
-    expect([range.to.getHours(), range.to.getMinutes(), range.to.getSeconds(), range.to.getMilliseconds()]).toEqual([23, 59, 59, 999]);
+    const range = getWeekRange(new Date("2026-01-07T12:00:00.000Z")); // Wed
+    expect(range.from.toISOString()).toBe("2026-01-05T04:00:00.000Z");
+    expect(range.to.toISOString()).toBe("2026-01-11T03:59:59.999Z");
   });
 
   it("a Saturday reference (when the cron actually runs) stays within the same week", () => {
-    const range = getWeekRange(new Date(2026, 0, 10)); // Sat
-    expect(range.from.getDate()).toBe(5);
-    expect(range.to.getDate()).toBe(10);
+    const range = getWeekRange(new Date("2026-01-10T12:00:00.000Z")); // Sat
+    expect(range.from.toISOString()).toBe("2026-01-05T04:00:00.000Z");
+    expect(range.to.toISOString()).toBe("2026-01-11T03:59:59.999Z");
   });
 
   it("a Monday reference is the start of its own range", () => {
-    const range = getWeekRange(new Date(2026, 0, 5)); // Mon
-    expect(range.from.getDate()).toBe(5);
-    expect(range.to.getDate()).toBe(10);
+    const range = getWeekRange(new Date("2026-01-05T12:00:00.000Z")); // Mon
+    expect(range.from.toISOString()).toBe("2026-01-05T04:00:00.000Z");
+    expect(range.to.toISOString()).toBe("2026-01-11T03:59:59.999Z");
   });
 
   it("a Sunday reference belongs to the previous week, not the next one", () => {
-    const range = getWeekRange(new Date(2026, 0, 11)); // Sun
-    expect(range.from.getDate()).toBe(5);
-    expect(range.to.getDate()).toBe(10);
+    const range = getWeekRange(new Date("2026-01-11T12:00:00.000Z")); // Sun
+    expect(range.from.toISOString()).toBe("2026-01-05T04:00:00.000Z");
+    expect(range.to.toISOString()).toBe("2026-01-11T03:59:59.999Z");
+  });
+
+  it("a Monday reference the following week resolves to that week instead", () => {
+    const range = getWeekRange(new Date("2026-01-12T12:00:00.000Z")); // Mon (next week)
+    expect(range.from.toISOString()).toBe("2026-01-12T04:00:00.000Z");
+    expect(range.to.toISOString()).toBe("2026-01-18T03:59:59.999Z");
+  });
+
+  it("honors an explicit timeZone override instead of the America/La_Paz default", () => {
+    // Asia/Tokyo is UTC+9 — midnight Monday there is the *previous* day
+    // 15:00 UTC (same conversion already verified in tests/timezone.test.ts).
+    const range = getWeekRange(new Date("2026-01-07T12:00:00.000Z"), "Asia/Tokyo");
+    expect(range.from.toISOString()).toBe("2026-01-04T15:00:00.000Z");
   });
 });
 

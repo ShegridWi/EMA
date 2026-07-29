@@ -8,6 +8,7 @@ import {
 } from "@react-pdf/renderer";
 import type { getTranslations } from "next-intl/server";
 import { formatCurrency } from "@/lib/currency";
+import { formatInTimezone } from "@/lib/timezone";
 import type { ReportData } from "@/lib/reports";
 
 // Purely presentational — all copy comes in as already-resolved
@@ -46,6 +47,7 @@ const styles = StyleSheet.create({
 export type ReportDocumentProps = {
   data: ReportData;
   locale: string;
+  timeZone: string;
   t: TFn;
   tSaleType: TFn;
   tCity: TFn;
@@ -57,6 +59,7 @@ export type ReportDocumentProps = {
 export function ReportDocument({
   data,
   locale,
+  timeZone,
   t,
   tSaleType,
   tCity,
@@ -64,7 +67,8 @@ export function ReportDocument({
   tSize,
   tProducts,
 }: ReportDocumentProps) {
-  const dateFmt = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
+  const formatDate = (date: Date) =>
+    formatInTimezone(date, timeZone, locale, { dateStyle: "medium" });
   const { range, sales, salesSummary, materials, products } = data;
 
   return (
@@ -73,12 +77,12 @@ export function ReportDocument({
         <Text style={styles.title}>{t("pdfTitle")}</Text>
         <Text style={styles.subtitle}>
           {t("pdfRangeLabel", {
-            from: dateFmt.format(range.from),
-            to: dateFmt.format(range.to),
+            from: formatDate(range.from),
+            to: formatDate(range.to),
           })}
         </Text>
         <Text style={styles.subtitle}>
-          {t("pdfGeneratedAt", { date: dateFmt.format(new Date()) })}
+          {t("pdfGeneratedAt", { date: formatDate(new Date()) })}
         </Text>
 
         <Text style={styles.sectionTitle}>{t("salesSectionTitle")}</Text>
@@ -101,7 +105,7 @@ export function ReportDocument({
             {sales.map((sale) => (
               <View key={sale.id} style={styles.row}>
                 <Text style={styles.cell}>
-                  {dateFmt.format(sale.saleDate)}
+                  {formatDate(sale.saleDate)}
                 </Text>
                 <Text style={[styles.cell, { flex: 2 }]}>
                   {sale.description}

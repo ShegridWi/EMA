@@ -9,6 +9,45 @@ import {
   InsufficientStockError,
   SaleNotFoundError,
 } from "@/lib/inventory";
+import { createSaleSchema } from "@/lib/validations/sale";
+
+// Confirms an assumption the phase 9 timezone refactor depends on
+// (05-nextjs-conventions.md "Timezone handling" / .prompts/09-system-improvements.md
+// 09b): per the JS Date spec, a bare `YYYY-MM-DD` string is parsed as
+// UTC midnight, unlike `YYYY-MM-DDTHH:mm:ss` (no offset), which is
+// parsed as *local* time. The sale form's saleDate/deliveryDate inputs
+// are `<input type="date">` (date-only), so `z.coerce.date()` already
+// does the right thing here — this was verified rather than changed.
+describe("createSaleSchema — saleDate/deliveryDate UTC parsing", () => {
+  it("parses a date-only saleDate as UTC midnight, not the server's local midnight", () => {
+    const parsed = createSaleSchema.parse({
+      productId: "00000000-0000-0000-0000-000000000000",
+      quantity: 1,
+      unitPrice: 10,
+      city: "LA_PAZ",
+      saleDate: "2026-01-07",
+      saleType: "CASH",
+      paymentMethod: "CASH",
+      amountPaid: 10,
+    });
+    expect(parsed.saleDate.toISOString()).toBe("2026-01-07T00:00:00.000Z");
+  });
+
+  it("parses a date-only deliveryDate as UTC midnight the same way", () => {
+    const parsed = createSaleSchema.parse({
+      productId: "00000000-0000-0000-0000-000000000000",
+      quantity: 1,
+      unitPrice: 10,
+      city: "LA_PAZ",
+      saleDate: "2026-01-07",
+      saleType: "ORDER",
+      paymentMethod: "CASH",
+      amountPaid: 0,
+      deliveryDate: "2026-01-20",
+    });
+    expect(parsed.deliveryDate?.toISOString()).toBe("2026-01-20T00:00:00.000Z");
+  });
+});
 
 // These are integration tests against the real local Postgres (docker
 // compose `ema-db-1`) — this project has no separate test-database

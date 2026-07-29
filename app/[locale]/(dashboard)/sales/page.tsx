@@ -4,6 +4,7 @@ import { listSales, listReversedSales } from "@/lib/inventory";
 import { Link } from "@/i18n/navigation";
 import { SaleActions } from "@/components/sales/sale-actions";
 import { formatCurrency } from "@/lib/currency";
+import { formatInTimezone } from "@/lib/timezone";
 
 type Props = {
   searchParams: Promise<{ tab?: string }>;
@@ -68,6 +69,7 @@ export default async function SalesPage({ searchParams }: Props) {
           tCity={tCity}
           isAdmin={isAdmin}
           locale={await getLocale()}
+          timeZone={session!.user.settings.timezone}
         />
       ) : (
         <ActiveSalesTable
@@ -167,6 +169,7 @@ async function CancelledSalesTable({
   tCity,
   isAdmin,
   locale,
+  timeZone,
 }: {
   sellerFilter: { sellerId?: string };
   t: TFn;
@@ -174,6 +177,7 @@ async function CancelledSalesTable({
   tCity: TFn;
   isAdmin: boolean;
   locale: string;
+  timeZone: string;
 }) {
   const reversedSales = await listReversedSales(sellerFilter);
 
@@ -221,7 +225,7 @@ async function CancelledSalesTable({
               <td className="p-2">{reason ?? "—"}</td>
               <td className="p-2">{performedBy}</td>
               <td className="p-2">
-                {new Intl.DateTimeFormat(locale).format(reversedAt)}
+                {formatInTimezone(reversedAt, timeZone, locale)}
               </td>
               {isAdmin && <td className="p-2">{sale.seller.name}</td>}
             </tr>
