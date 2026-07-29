@@ -58,6 +58,7 @@ export default async function MaterialsPage({ searchParams }: Props) {
   const tCommon = await getTranslations("Common");
   const tUnit = await getTranslations("Unit");
   const tCity = await getTranslations("City");
+  const tHistory = await getTranslations("MaterialHistory");
 
   return (
     <div className="flex flex-col gap-6">
@@ -153,7 +154,7 @@ export default async function MaterialsPage({ searchParams }: Props) {
                 <th className="p-2">{t("unit")}</th>
                 <th className="p-2">{t("city")}</th>
                 <th className="p-2">{t("purchasePrice")}</th>
-                {isAdmin && <th className="p-2">{tCommon("actions")}</th>}
+                <th className="p-2">{tCommon("actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -171,24 +172,32 @@ export default async function MaterialsPage({ searchParams }: Props) {
                   <td className="p-2">
                     {formatCurrency(material.purchasePrice.toString())}
                   </td>
-                  {isAdmin && (
-                    <td className="p-2">
-                      <div className="flex gap-3">
-                        <Link
-                          href={`/inventory/materials/${material.id}/edit`}
-                          className="underline"
-                        >
-                          {tCommon("edit")}
-                        </Link>
-                        {material.active ? (
-                          <DeactivateMaterialButton id={material.id} />
-                        ) : (
-                          <ReactivateMaterialButton id={material.id} />
-                        )}
-                        <DeleteMaterialButton id={material.id} />
-                      </div>
-                    </td>
-                  )}
+                  <td className="p-2">
+                    <div className="flex gap-3">
+                      <Link
+                        href={`/inventory/materials/${material.id}/history`}
+                        className="underline"
+                      >
+                        {tHistory("linkLabel")}
+                      </Link>
+                      {isAdmin && (
+                        <>
+                          <Link
+                            href={`/inventory/materials/${material.id}/edit`}
+                            className="underline"
+                          >
+                            {tCommon("edit")}
+                          </Link>
+                          {material.active ? (
+                            <DeactivateMaterialButton id={material.id} />
+                          ) : (
+                            <ReactivateMaterialButton id={material.id} />
+                          )}
+                          <DeleteMaterialButton id={material.id} />
+                        </>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

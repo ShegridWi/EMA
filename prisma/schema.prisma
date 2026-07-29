@@ -122,12 +122,13 @@ model User {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  materials      Material[]
-  products       Product[]
-  sales          Sale[]
-  movementLogs   MovementLog[]
-  settings       UserSettings?
-  stockMovements ProductStockMovement[]
+  materials              Material[]
+  products               Product[]
+  sales                  Sale[]
+  movementLogs           MovementLog[]
+  settings               UserSettings?
+  stockMovements         ProductStockMovement[]
+  materialStockMovements MaterialStockMovement[]
 }
 
 // Per-user preferences (phase 9) — created on demand with defaults the
@@ -167,6 +168,29 @@ model Material {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
+
+  stockMovements MaterialStockMovement[]
+}
+
+// Per-material stock ledger, same idea and same StockMovementReason enum
+// as ProductStockMovement (02-data-model.md) — but simpler: quantities
+// are Decimal here (Material.quantity is Decimal(10,2), unlike
+// Product.quantity's Int — a material's stock can be fractional, e.g.
+// 5.25 meters of fabric), and there's no saleId — materials aren't sold
+// directly, only SALE/RETURN/VOID never apply here (createMaterial only
+// ever writes CREATED, updateMaterial only ever writes
+// MANUAL_ADJUSTMENT).
+model MaterialStockMovement {
+  id             String              @id @default(uuid())
+  materialId     String
+  material       Material            @relation(fields: [materialId], references: [id])
+  quantityBefore Decimal             @db.Decimal(10, 2)
+  quantityAfter  Decimal             @db.Decimal(10, 2)
+  delta          Decimal             @db.Decimal(10, 2)
+  reason         StockMovementReason
+  userId         String
+  user           User                @relation(fields: [userId], references: [id])
+  createdAt      DateTime            @default(now())
 }
 
 model Product {

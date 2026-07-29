@@ -322,5 +322,16 @@
     "tableSale": "Venta relacionada",
     "tableUser": "Quién",
     "linkLabel": "Historial"
+  },
+  "MaterialHistory": {
+    "title": "Historial de {description}",
+    "backToList": "Volver al listado",
+    "tableDate": "Fecha",
+    "tableBefore": "Antes",
+    "tableAfter": "Después",
+    "tableDelta": "Cambio",
+    "tableReason": "Motivo",
+    "tableUser": "Quién",
+    "linkLabel": "Historial"
   }
 }
