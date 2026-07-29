@@ -181,7 +181,13 @@
     "actionVoid": "Void",
     "reason": "Reason",
     "performedBy": "Performed by",
-    "reversedAt": "Date"
+    "reversedAt": "Date",
+    "searchPlaceholder": "Search by product, color, or customer...",
+    "cityAll": "All cities",
+    "saleTypeAll": "All types",
+    "sellerAll": "All sellers",
+    "dateFrom": "From",
+    "dateTo": "To"
   },
   "Users": {
     "title": "Users",
