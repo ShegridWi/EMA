@@ -1,24 +1,30 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { auth } from "@/lib/auth";
 
-// These routes don't exist yet — they're built in later phases (see
-// .prompts/00-README.md). Only the links are wired up here.
+// /reports and /movement-log don't exist yet — they're built in later
+// phases (see .prompts/00-README.md). Only the links are wired up here.
+// Both are admin-only per 03-roles-permissions.md, same as /users below.
 const NAV_LINKS = [
-  { href: "/inventory/materials", key: "materials" },
-  { href: "/inventory/products", key: "products" },
-  { href: "/sales", key: "sales" },
-  { href: "/reports", key: "reports" },
-  { href: "/users", key: "users" },
-  { href: "/movement-log", key: "movementLog" },
+  { href: "/inventory/materials", key: "materials", adminOnly: false },
+  { href: "/inventory/products", key: "products", adminOnly: false },
+  { href: "/sales", key: "sales", adminOnly: false },
+  { href: "/reports", key: "reports", adminOnly: true },
+  { href: "/users", key: "users", adminOnly: true },
+  { href: "/movement-log", key: "movementLog", adminOnly: true },
 ] as const;
 
 export async function DashboardNav() {
   const t = await getTranslations("Nav");
+  const session = await auth();
+  const isAdmin = session?.user.role === "ADMIN";
+
+  const links = NAV_LINKS.filter((link) => !link.adminOnly || isAdmin);
 
   return (
     <nav className="w-56 shrink-0 border-r border-zinc-200 p-4 dark:border-zinc-800">
       <ul className="flex flex-col gap-1">
-        {NAV_LINKS.map((link) => (
+        {links.map((link) => (
           <li key={link.key}>
             <Link
               href={link.href}

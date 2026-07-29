@@ -78,6 +78,7 @@ enum MovementAction {
   CREATE_USER
   UPDATE_USER
   DELETE_USER
+  REACTIVATE_USER
 }
 
 model User {
