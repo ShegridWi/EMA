@@ -168,6 +168,7 @@ export type ProductFilters = {
   // Already-resolved UTC instants — see MaterialFilters above.
   createdFrom?: Date;
   createdTo?: Date;
+  active?: boolean;
 };
 
 // `size` matches at the row level, including SET containers and their
@@ -180,13 +181,14 @@ export type ProductFilters = {
 // (it reappears once the filter is cleared) — a narrow display quirk,
 // not a data problem, not worth changing filter semantics over.
 export function listProducts(filters: ProductFilters = {}) {
-  const { search, city, size, createdFrom, createdTo } = filters;
+  const { search, city, size, createdFrom, createdTo, active } = filters;
 
   return prisma.product.findMany({
     where: {
       deletedAt: null,
       ...(city ? { city } : {}),
       ...(size ? { size } : {}),
+      ...(active !== undefined ? { active } : {}),
       ...(createdFrom || createdTo
         ? {
             createdAt: {
@@ -363,6 +365,55 @@ export async function deleteProduct(id: string, userId: string) {
       entityType: "Product",
       entityId: product.id,
       metadata: {},
+    });
+
+    return product;
+  });
+}
+
+// `active` (phase 9) is a separate, reversible concept from the
+// deletedAt soft delete above — e.g. discontinued/out of production but
+// might come back, versus a permanent removal from the catalog. Same
+// independent-row rule as delete: deactivating a SET's container row
+// does not cascade to its pieces.
+export async function deactivateProduct(id: string, userId: string) {
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.update({
+      where: { id },
+      data: { active: false },
+    });
+
+    await writeAuditLog(tx, {
+      userId,
+      action: "DEACTIVATE_PRODUCT",
+      entityType: "Product",
+      entityId: product.id,
+      metadata: {},
+    });
+
+    return product;
+  });
+}
+
+// `reason` is an optional free-text note on why the product is being
+// restored — same idea as reactivateUser's reason (lib/users.ts).
+export async function reactivateProduct(
+  id: string,
+  userId: string,
+  reason?: string,
+) {
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.update({
+      where: { id },
+      data: { active: true },
+    });
+
+    await writeAuditLog(tx, {
+      userId,
+      action: "REACTIVATE_PRODUCT",
+      entityType: "Product",
+      entityId: product.id,
+      metadata: reason ? { reason } : {},
     });
 
     return product;

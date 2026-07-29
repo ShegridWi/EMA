@@ -80,6 +80,8 @@ enum MovementAction {
   CREATE_PRODUCT
   UPDATE_PRODUCT
   DELETE_PRODUCT
+  DEACTIVATE_PRODUCT
+  REACTIVATE_PRODUCT
   CREATE_SALE
   UPDATE_SALE
   DELETE_SALE
@@ -160,6 +162,11 @@ model Product {
   set         Product?    @relation("ProductPieces", fields: [setId], references: [id])
   pieces      Product[]   @relation("ProductPieces")
   pieceRole   PieceRole?
+  // Reversible toggle (phase 9), separate from deletedAt below — e.g.
+  // discontinued/out of production but might come back. Doesn't cascade
+  // to a SET's pieces, same independent-row rule as delete
+  // (02-data-model.md).
+  active      Boolean     @default(true)
   createdById String
   createdBy   User        @relation(fields: [createdById], references: [id])
   createdAt   DateTime    @default(now())

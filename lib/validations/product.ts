@@ -34,6 +34,17 @@ export const updateProductSchema = createUnitProductSchema.extend({
   id: z.uuid(),
 });
 
+export const deactivateProductSchema = z.object({ id: z.uuid() });
+
+// `reason` is optional — a free-text note on why the product is being
+// restored, same shape as lib/validations/user.ts's reactivateUserSchema.
+export const reactivateProductSchema = z.object({
+  id: z.uuid(),
+  reason: z.string().min(1).optional(),
+});
+
 export type CreateUnitProductInput = z.infer<typeof createUnitProductSchema>;
 export type CreateSetProductInput = z.infer<typeof createSetProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+export type DeactivateProductInput = z.infer<typeof deactivateProductSchema>;
+export type ReactivateProductInput = z.infer<typeof reactivateProductSchema>;

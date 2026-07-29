@@ -111,7 +111,14 @@
     "capQuantity": "Cantidad inicial — Gorro",
     "sizeAll": "Todas las tallas",
     "createdFrom": "Creado desde",
-    "createdTo": "Creado hasta"
+    "createdTo": "Creado hasta",
+    "tabActive": "Activos",
+    "tabInactive": "Inactivos",
+    "deactivate": "Desactivar",
+    "confirmDeactivate": "¿Seguro que quieres desactivar este producto? Dejará de aparecer en el listado activo.",
+    "reactivate": "Reactivar",
+    "confirmReactivate": "¿Confirmas que quieres reactivar este producto?",
+    "reasonPrompt": "Motivo (opcional):"
   },
   "SaleType": {
     "CASH": "Contado",

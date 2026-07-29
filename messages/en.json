@@ -111,7 +111,14 @@
     "capQuantity": "Starting quantity — Cap",
     "sizeAll": "All sizes",
     "createdFrom": "Created from",
-    "createdTo": "Created to"
+    "createdTo": "Created to",
+    "tabActive": "Active",
+    "tabInactive": "Inactive",
+    "deactivate": "Deactivate",
+    "confirmDeactivate": "Are you sure you want to deactivate this product? It will no longer appear in the active listing.",
+    "reactivate": "Reactivate",
+    "confirmReactivate": "Confirm you want to reactivate this product?",
+    "reasonPrompt": "Reason (optional):"
   },
   "SaleType": {
     "CASH": "Cash",
