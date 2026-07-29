@@ -4,6 +4,7 @@ import { useActionState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { createUserAction, updateUserAction } from "@/lib/actions/users";
+import { useToast } from "@/components/ui/toast-provider";
 import { Role, City } from "@/app/generated/prisma/enums";
 import type { SerializedUser } from "@/lib/users";
 
@@ -18,6 +19,7 @@ export function UserForm({ user }: { user?: SerializedUser }) {
   const tRole = useTranslations("Role");
   const tCity = useTranslations("City");
   const router = useRouter();
+  const { showToast } = useToast();
   const isEdit = Boolean(user);
 
   async function action(
@@ -46,12 +48,27 @@ export function UserForm({ user }: { user?: SerializedUser }) {
     null,
   );
 
+  // `isEdit`/`t`/`tCommon` deliberately excluded below — see the
+  // identical note in components/materials/material-form.tsx.
   useEffect(() => {
     if (state?.success) {
+      showToast(
+        "success",
+        isEdit ? tCommon("actionUpdated") : tCommon("actionCreated"),
+      );
       router.push("/users");
       router.refresh();
+    } else if (state?.success === false) {
+      if (state.error === "Forbidden") {
+        showToast("error", tCommon("errorForbidden"));
+      } else if (state.error === "email_in_use") {
+        showToast("warning", t("errorEmailInUse"));
+      } else {
+        showToast("error", tCommon("errorValidation"));
+      }
     }
-  }, [state, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, router, showToast]);
 
   return (
     <form action={formAction} className="flex max-w-md flex-col gap-4">

@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { createSetProductAction } from "@/lib/actions/products";
+import { useToast } from "@/components/ui/toast-provider";
 import { Size, City } from "@/app/generated/prisma/enums";
 
 type ActionResult =
@@ -19,6 +20,7 @@ export function SetProductForm() {
   const tSize = useTranslations("Size");
   const tCity = useTranslations("City");
   const router = useRouter();
+  const { showToast } = useToast();
   const [includeCap, setIncludeCap] = useState(false);
 
   async function action(
@@ -45,12 +47,23 @@ export function SetProductForm() {
     null,
   );
 
+  // `tCommon` deliberately excluded below — see the identical note in
+  // components/materials/material-form.tsx.
   useEffect(() => {
     if (state?.success) {
+      showToast("success", tCommon("actionCreated"));
       router.push("/inventory/products");
       router.refresh();
+    } else if (state?.success === false) {
+      showToast(
+        "error",
+        state.error === "Forbidden"
+          ? tCommon("errorForbidden")
+          : tCommon("errorValidation"),
+      );
     }
-  }, [state, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, router, showToast]);
 
   return (
     <form action={formAction} className="flex max-w-md flex-col gap-4">

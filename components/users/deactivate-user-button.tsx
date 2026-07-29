@@ -4,11 +4,19 @@ import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { deactivateUserAction } from "@/lib/actions/users";
+import { useToast } from "@/components/ui/toast-provider";
+import { PromptModal } from "@/components/ui/prompt-modal";
 
 // `disabled` is passed by the caller (app/[locale]/(dashboard)/users/page.tsx)
 // for the admin's own row — the Server Action rejects self-deactivation too
 // (CannotDeactivateSelfError), but hiding it from the UI avoids a confusing
 // error for a mistake that's easy to make by accident (see .prompts/06-users-admin.md).
+//
+// Uses PromptModal (components/ui) instead of window.confirm() — no
+// `inputLabel` since deactivating doesn't take a reason (unlike
+// reactivate), so the modal renders as a plain yes/no confirm, same as
+// components/materials/deactivate-material-button.tsx and
+// components/products/deactivate-product-button.tsx.
 export function DeactivateUserButton({
   id,
   disabled,
@@ -19,22 +27,24 @@ export function DeactivateUserButton({
   const t = useTranslations("Users");
   const tCommon = useTranslations("Common");
   const router = useRouter();
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
-  function handleDeactivate() {
-    if (!window.confirm(t("confirmDeactivate"))) return;
-    setError(null);
+  function handleConfirm() {
+    setOpen(false);
     startTransition(async () => {
       const result = await deactivateUserAction({ id });
       if (!result.success) {
-        setError(
+        showToast(
+          result.error === "cannot_deactivate_self" ? "warning" : "error",
           result.error === "cannot_deactivate_self"
-            ? "cannot_deactivate_self"
-            : "generic",
+            ? t("errorCannotDeactivateSelf")
+            : tCommon("errorGeneric"),
         );
         return;
       }
+      showToast("success", tCommon("actionDeactivated"));
       router.refresh();
     });
   }
@@ -42,22 +52,25 @@ export function DeactivateUserButton({
   if (disabled) return null;
 
   return (
-    <div className="flex flex-col gap-1">
+    <>
       <button
         type="button"
-        onClick={handleDeactivate}
+        onClick={() => setOpen(true)}
         disabled={isPending}
         className="text-red-600 underline disabled:opacity-50 dark:text-red-400"
       >
         {t("deactivate")}
       </button>
-      {error && (
-        <p role="alert" className="text-xs text-red-600 dark:text-red-400">
-          {error === "cannot_deactivate_self"
-            ? t("errorCannotDeactivateSelf")
-            : tCommon("errorGeneric")}
-        </p>
-      )}
-    </div>
+
+      <PromptModal
+        open={open}
+        title={t("deactivate")}
+        message={t("confirmDeactivate")}
+        confirmLabel={tCommon("confirm")}
+        cancelLabel={tCommon("cancel")}
+        onConfirm={handleConfirm}
+        onCancel={() => setOpen(false)}
+      />
+    </>
   );
 }

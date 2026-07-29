@@ -1,0 +1,116 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { useTranslations } from "next-intl";
+
+export type ToastType = "success" | "error" | "warning";
+
+type Toast = { id: number; type: ToastType; message: string };
+
+type ToastContextValue = {
+  showToast: (type: ToastType, message: string) => void;
+};
+
+const ToastContext = createContext<ToastContextValue | null>(null);
+
+// Fixed at 3 seconds per spec — every CRUD action across the app
+// (materials/products/sales/users/settings) reports through this same
+// provider, so the timing only needs to live in one place.
+const TOAST_DURATION_MS = 3000;
+
+export function useToast(): ToastContextValue {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error("useToast must be used within a ToastProvider");
+  }
+  return context;
+}
+
+// Mounted once at the dashboard layout level (app/[locale]/(dashboard)/layout.tsx)
+// — every CRUD component below it calls useToast() to report its own
+// outcome; this provider only owns the stacking/timing/rendering, never
+// the message content (that's always supplied by the caller, same "copy
+// as props" idea as components/ui/prompt-modal.tsx).
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const nextId = useRef(0);
+
+  const showToast = useCallback((type: ToastType, message: string) => {
+    const id = nextId.current++;
+    setToasts((current) => [...current, { id, type, message }]);
+  }, []);
+
+  const dismiss = useCallback((id: number) => {
+    setToasts((current) => current.filter((toast) => toast.id !== id));
+  }, []);
+
+  return (
+    <ToastContext.Provider value={{ showToast }}>
+      {children}
+      <div
+        aria-live="polite"
+        className="pointer-events-none fixed bottom-4 right-4 z-50 flex w-full max-w-sm flex-col gap-2"
+      >
+        {toasts.map((toast) => (
+          <ToastItem
+            key={toast.id}
+            toast={toast}
+            onDismiss={() => dismiss(toast.id)}
+          />
+        ))}
+      </div>
+    </ToastContext.Provider>
+  );
+}
+
+const TOAST_STYLES: Record<ToastType, string> = {
+  success:
+    "border-green-600 bg-green-50 text-green-900 dark:border-green-500 dark:bg-green-950 dark:text-green-100",
+  error:
+    "border-red-600 bg-red-50 text-red-900 dark:border-red-500 dark:bg-red-950 dark:text-red-100",
+  warning:
+    "border-amber-600 bg-amber-50 text-amber-900 dark:border-amber-500 dark:bg-amber-950 dark:text-amber-100",
+};
+
+function ToastItem({
+  toast,
+  onDismiss,
+}: {
+  toast: Toast;
+  onDismiss: () => void;
+}) {
+  const t = useTranslations("Toast");
+
+  // `onDismiss` is a fresh closure every render (built from toast.id in
+  // the parent's map) — depending on it would reset the 3-second timer
+  // on every unrelated re-render instead of firing it once.
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, TOAST_DURATION_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div
+      role="status"
+      className={`pointer-events-auto flex items-start gap-3 rounded-md border px-4 py-3 text-sm shadow-lg ${TOAST_STYLES[toast.type]}`}
+    >
+      <span className="flex-1">{toast.message}</span>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label={t("dismiss")}
+        className="leading-none opacity-70 hover:opacity-100"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
