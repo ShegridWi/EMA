@@ -1,6 +1,18 @@
 {
   "Common": {
-    "appName": "EMA"
+    "appName": "EMA",
+    "actions": "Acciones",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "create": "Crear",
+    "confirmDelete": "¿Seguro que quieres eliminar este registro?",
+    "empty": "No hay registros todavía.",
+    "search": "Buscar",
+    "errorForbidden": "No tienes permiso para realizar esta acción.",
+    "errorValidation": "Revisa los datos del formulario.",
+    "errorGeneric": "Ocurrió un error. Intenta de nuevo."
   },
   "Login": {
     "title": "Iniciar sesión",
@@ -27,10 +39,35 @@
     "dark": "Oscuro"
   },
   "Dashboard": {
-    "welcome": "Hola, {name}",
-    "roleAdmin": "Administrador",
-    "roleSeller": "Vendedor/a",
-    "cityLaPaz": "La Paz",
-    "citySantaCruz": "Santa Cruz"
+    "welcome": "Hola, {name}"
+  },
+  "Role": {
+    "ADMIN": "Administrador",
+    "SELLER": "Vendedor/a"
+  },
+  "City": {
+    "LA_PAZ": "La Paz",
+    "SANTA_CRUZ": "Santa Cruz"
+  },
+  "Unit": {
+    "METERS": "Metros",
+    "UNITS": "Unidades",
+    "ROLLS": "Rollos"
+  },
+  "Materials": {
+    "title": "Confección",
+    "addNew": "Nuevo material",
+    "editTitle": "Editar material",
+    "newTitle": "Nuevo material",
+    "searchPlaceholder": "Buscar por tipo, subtipo o color...",
+    "materialType": "Material",
+    "color": "Color",
+    "type": "Tipo",
+    "quantity": "Cantidad",
+    "unit": "Unidad",
+    "city": "Ciudad",
+    "purchasePrice": "Precio de compra",
+    "colorOptional": "Color (opcional)",
+    "backToList": "Volver al listado"
   }
 }
