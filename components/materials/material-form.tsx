@@ -8,14 +8,18 @@ import {
   updateMaterialAction,
 } from "@/lib/actions/materials";
 import { Unit, City } from "@/app/generated/prisma/enums";
-import type { Material } from "@/app/generated/prisma/client";
+import type { SerializedMaterial } from "@/lib/inventory";
 
 type ActionResult =
   | { success: true; data: unknown }
   | { success: false; error: unknown }
   | null;
 
-export function MaterialForm({ material }: { material?: Material }) {
+export function MaterialForm({
+  material,
+}: {
+  material?: SerializedMaterial;
+}) {
   const t = useTranslations("Materials");
   const tCommon = useTranslations("Common");
   const tUnit = useTranslations("Unit");
@@ -105,7 +109,7 @@ export function MaterialForm({ material }: { material?: Material }) {
           step="0.01"
           min="0"
           required
-          defaultValue={material?.quantity.toString()}
+          defaultValue={material?.quantity}
           className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
         />
       </div>
@@ -159,7 +163,7 @@ export function MaterialForm({ material }: { material?: Material }) {
           step="0.01"
           min="0"
           required
-          defaultValue={material?.purchasePrice.toString()}
+          defaultValue={material?.purchasePrice}
           className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
         />
       </div>

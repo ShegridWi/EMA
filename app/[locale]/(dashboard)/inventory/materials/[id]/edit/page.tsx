@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
-import { getMaterialById } from "@/lib/inventory";
+import { getMaterialById, serializeMaterial } from "@/lib/inventory";
 import { MaterialForm } from "@/components/materials/material-form";
 
 type Props = {
@@ -27,7 +27,7 @@ export default async function EditMaterialPage({ params }: Props) {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-semibold">{t("editTitle")}</h1>
-      <MaterialForm material={material} />
+      <MaterialForm material={serializeMaterial(material)} />
     </div>
   );
 }
