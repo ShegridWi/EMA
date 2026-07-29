@@ -68,6 +68,14 @@ Resolved:
   `customerName`/`customerPhone` are collected as optional fields on the
   sale form (all sale types, not just orders/reservations), matching the
   nullable fields already in the `Sale` model.
+- ~~**Currency**~~ — decided for `feature/sales`: the business operates in
+  **Bolivianos (BOB)** by default. `lib/currency.ts` defines `Currency`
+  (`BOB` | `USD`) and `formatCurrency()`, used in list views (Materials,
+  Products, Sales) to render amounts as `Bs 150.00`. No form collects a
+  currency choice yet — every amount is assumed BOB. Revisit if the
+  business ever needs to record a sale/price in USD; that would need a
+  `currency` column added to `Material`/`Product`/`Sale` plus a form
+  field, not just a display change.
 
 None of these block starting the project (they were modeled with
 reasonable defaults), but they should be resolved before building the

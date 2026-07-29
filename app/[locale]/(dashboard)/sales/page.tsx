@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { listSales } from "@/lib/inventory";
 import { Link } from "@/i18n/navigation";
 import { SaleActions } from "@/components/sales/sale-actions";
+import { formatCurrency } from "@/lib/currency";
 
 export default async function SalesPage() {
   const session = await auth();
@@ -60,8 +61,12 @@ export default async function SalesPage() {
                 >
                   <td className="p-2">{sale.description}</td>
                   <td className="p-2">{sale.quantity}</td>
-                  <td className="p-2">{sale.totalPrice.toString()}</td>
-                  <td className="p-2">{sale.balanceDue.toString()}</td>
+                  <td className="p-2">
+                    {formatCurrency(sale.totalPrice.toString())}
+                  </td>
+                  <td className="p-2">
+                    {formatCurrency(sale.balanceDue.toString())}
+                  </td>
                   <td className="p-2">{tSaleType(sale.saleType)}</td>
                   <td className="p-2">{tPaymentMethod(sale.paymentMethod)}</td>
                   <td className="p-2">{tCity(sale.city)}</td>

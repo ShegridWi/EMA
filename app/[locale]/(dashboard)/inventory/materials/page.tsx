@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { listMaterials } from "@/lib/inventory";
 import { Link } from "@/i18n/navigation";
 import { DeleteMaterialButton } from "@/components/materials/delete-material-button";
+import { formatCurrency } from "@/lib/currency";
 
 type Props = {
   searchParams: Promise<{ q?: string }>;
@@ -81,7 +82,9 @@ export default async function MaterialsPage({ searchParams }: Props) {
                   <td className="p-2">{material.quantity.toString()}</td>
                   <td className="p-2">{tUnit(material.unit)}</td>
                   <td className="p-2">{tCity(material.city)}</td>
-                  <td className="p-2">{material.purchasePrice.toString()}</td>
+                  <td className="p-2">
+                    {formatCurrency(material.purchasePrice.toString())}
+                  </td>
                   {isAdmin && (
                     <td className="p-2">
                       <div className="flex gap-3">

@@ -4,40 +4,38 @@ import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { returnSaleAction, voidSaleAction } from "@/lib/actions/sales";
+import { PromptModal } from "@/components/ui/prompt-modal";
+
+type PendingAction = "return" | "void" | null;
 
 // ADMIN-only (enforced server-side in the Server Actions too). Both
 // actions soft-delete the sale and restore the stock it deducted — see
-// lib/inventory.ts's reverseSale for why they're symmetric.
+// lib/inventory.ts's reverseSale for why they're symmetric. Confirmation
+// + the optional reason are collected in one PromptModal (components/ui)
+// instead of window.confirm()/window.prompt() — Cancel in the modal
+// aborts the whole action (unlike the old window.prompt() step, where
+// Cancel just meant "no reason").
 export function SaleActions({ saleId }: { saleId: string }) {
   const t = useTranslations("Sales");
   const tCommon = useTranslations("Common");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
-  // window.prompt() returns null if the admin hits Cancel — treated the
-  // same as leaving it blank (no reason recorded), since intent to
-  // proceed was already confirmed by the window.confirm() above.
-  function handleReturn() {
-    if (!window.confirm(t("confirmReturn"))) return;
-    const reason = window.prompt(t("reasonPrompt"))?.trim() || undefined;
+  function handleConfirm(reason: string) {
+    const action = pendingAction;
+    setPendingAction(null);
+    if (!action) return;
+
     setError(null);
     startTransition(async () => {
-      const result = await returnSaleAction({ id: saleId, reason });
-      if (!result.success) {
-        setError(result.error === "not_found" ? "not_found" : "generic");
-        return;
-      }
-      router.refresh();
-    });
-  }
+      const trimmedReason = reason.trim() || undefined;
+      const result =
+        action === "return"
+          ? await returnSaleAction({ id: saleId, reason: trimmedReason })
+          : await voidSaleAction({ id: saleId, reason: trimmedReason });
 
-  function handleVoid() {
-    if (!window.confirm(t("confirmVoid"))) return;
-    const reason = window.prompt(t("reasonPrompt"))?.trim() || undefined;
-    setError(null);
-    startTransition(async () => {
-      const result = await voidSaleAction({ id: saleId, reason });
       if (!result.success) {
         setError(result.error === "not_found" ? "not_found" : "generic");
         return;
@@ -51,7 +49,7 @@ export function SaleActions({ saleId }: { saleId: string }) {
       <div className="flex gap-3">
         <button
           type="button"
-          onClick={handleReturn}
+          onClick={() => setPendingAction("return")}
           disabled={isPending}
           className="text-sm underline disabled:opacity-50"
         >
@@ -59,7 +57,7 @@ export function SaleActions({ saleId }: { saleId: string }) {
         </button>
         <button
           type="button"
-          onClick={handleVoid}
+          onClick={() => setPendingAction("void")}
           disabled={isPending}
           className="text-sm text-red-600 underline disabled:opacity-50 dark:text-red-400"
         >
@@ -71,6 +69,19 @@ export function SaleActions({ saleId }: { saleId: string }) {
           {error === "not_found" ? t("errorNotFound") : tCommon("errorGeneric")}
         </p>
       )}
+
+      <PromptModal
+        open={pendingAction !== null}
+        title={pendingAction === "return" ? t("markAsReturn") : t("voidSale")}
+        message={
+          pendingAction === "return" ? t("confirmReturn") : t("confirmVoid")
+        }
+        inputLabel={t("reasonPrompt")}
+        confirmLabel={tCommon("confirm")}
+        cancelLabel={tCommon("cancel")}
+        onConfirm={handleConfirm}
+        onCancel={() => setPendingAction(null)}
+      />
     </div>
   );
 }

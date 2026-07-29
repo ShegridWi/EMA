@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { listProducts } from "@/lib/inventory";
 import { Link } from "@/i18n/navigation";
 import { DeleteProductButton } from "@/components/products/delete-product-button";
+import { formatCurrency } from "@/lib/currency";
 import type { Product } from "@/app/generated/prisma/client";
 
 type Props = {
@@ -101,7 +102,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                       <p className="font-medium">{set.description}</p>
                       <p className="text-sm text-zinc-500 dark:text-zinc-400">
                         {set.color} · {tSize(set.size)} · {tCity(set.city)} ·{" "}
-                        {set.price.toString()}
+                        {formatCurrency(set.price.toString())}
                       </p>
                     </div>
                     {isAdmin && (
@@ -138,7 +139,9 @@ export default async function ProductsPage({ searchParams }: Props) {
                               {piece.pieceRole ? tPieceRole(piece.pieceRole) : "—"}
                             </td>
                             <td className="p-2">{piece.quantity}</td>
-                            <td className="p-2">{piece.price.toString()}</td>
+                            <td className="p-2">
+                              {formatCurrency(piece.price.toString())}
+                            </td>
                             {isAdmin && (
                               <td className="p-2">
                                 <div className="flex gap-3">
@@ -190,7 +193,9 @@ export default async function ProductsPage({ searchParams }: Props) {
                         <td className="p-2">{product.color}</td>
                         <td className="p-2">{tSize(product.size)}</td>
                         <td className="p-2">{product.quantity}</td>
-                        <td className="p-2">{product.price.toString()}</td>
+                        <td className="p-2">
+                          {formatCurrency(product.price.toString())}
+                        </td>
                         <td className="p-2">{tCity(product.city)}</td>
                         {isAdmin && (
                           <td className="p-2">
