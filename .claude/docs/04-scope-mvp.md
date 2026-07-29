@@ -50,13 +50,6 @@ validating:
    recorded, even optionally, especially for orders and reservations (to
    be able to contact them when ready)? Recommended: yes, at least as
    optional fields.
-5. **Material and color catalog**: are material types and colors a fixed
-   predefined catalog, or should the admin be able to freely add new
-   options from the UI? Recommended: catalog editable by admin, not
-   hardcoded.
-6. **Sizes**: is there a fixed set of sizes (S, M, L, XL...) or is it free
-   text? Recommended: fixed catalog to avoid inconsistencies in
-   reports/search.
 7. **Weekly report email**: which address(es) does it go to? All
    registered admins, or one fixed business mailbox?
 
@@ -64,6 +57,15 @@ Resolved:
 
 - ~~**Supported languages**~~ — confirmed: **Spanish (default) + English**
   for the MVP. See `CLAUDE.md` section 5.
+- ~~**Material and color catalog**~~ — decided for `feature/db-schema`:
+  `Material.materialType` and `Material.color` are free `String` fields for
+  now (not an editable catalog table), to avoid blocking the schema on an
+  extra CRUD module this early. **Still pending business confirmation** —
+  revisit if inconsistent free-text values become a real problem in
+  reports/search; migrating to a catalog table later is possible without
+  losing existing data (`materialType`/`color` values become seed rows).
+- ~~**Sizes**~~ — confirmed: fixed catalog, modeled as `enum Size { XS S M
+  L XL XXL }` in `prisma/schema.prisma`.
 
 None of these block starting the project (they were modeled with
 reasonable defaults), but they should be resolved before building the
