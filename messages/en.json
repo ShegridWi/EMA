@@ -186,5 +186,46 @@
     "reasonPrompt": "Reason (optional):",
     "errorEmailInUse": "That email is already in use by another user.",
     "errorCannotDeactivateSelf": "You can't deactivate your own account."
+  },
+  "MovementAction": {
+    "LOGIN": "Sign in",
+    "CREATE_MATERIAL": "Material created",
+    "UPDATE_MATERIAL": "Material updated",
+    "DELETE_MATERIAL": "Material deleted",
+    "CREATE_PRODUCT": "Product created",
+    "UPDATE_PRODUCT": "Product updated",
+    "DELETE_PRODUCT": "Product deleted",
+    "CREATE_SALE": "Sale registered",
+    "UPDATE_SALE": "Sale updated",
+    "DELETE_SALE": "Sale deleted",
+    "RETURN_SALE": "Sale returned",
+    "VOID_SALE": "Sale voided",
+    "CREATE_USER": "User created",
+    "UPDATE_USER": "User updated",
+    "DELETE_USER": "User deactivated",
+    "REACTIVATE_USER": "User reactivated"
+  },
+  "EntityType": {
+    "Material": "Material",
+    "Product": "Product",
+    "Sale": "Sale",
+    "User": "User"
+  },
+  "MovementLog": {
+    "title": "Movement log",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "entityTypeLabel": "Entity type",
+    "entityTypeAll": "All types",
+    "userLabel": "User",
+    "userAll": "All users",
+    "tableDate": "Date",
+    "tableUser": "User",
+    "tableAction": "Action",
+    "tableEntity": "Entity",
+    "tableDetails": "Details",
+    "pageIndicator": "Page {page} of {pageCount} ({total} records)",
+    "previousPage": "Previous",
+    "nextPage": "Next"
   }
 }

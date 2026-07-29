@@ -186,5 +186,46 @@
     "reasonPrompt": "Motivo (opcional):",
     "errorEmailInUse": "Ese correo ya está en uso por otro usuario.",
     "errorCannotDeactivateSelf": "No puedes desactivar tu propia cuenta."
+  },
+  "MovementAction": {
+    "LOGIN": "Inicio de sesión",
+    "CREATE_MATERIAL": "Creación de material",
+    "UPDATE_MATERIAL": "Edición de material",
+    "DELETE_MATERIAL": "Eliminación de material",
+    "CREATE_PRODUCT": "Creación de producto",
+    "UPDATE_PRODUCT": "Edición de producto",
+    "DELETE_PRODUCT": "Eliminación de producto",
+    "CREATE_SALE": "Registro de venta",
+    "UPDATE_SALE": "Edición de venta",
+    "DELETE_SALE": "Eliminación de venta",
+    "RETURN_SALE": "Devolución de venta",
+    "VOID_SALE": "Anulación de venta",
+    "CREATE_USER": "Creación de usuario",
+    "UPDATE_USER": "Edición de usuario",
+    "DELETE_USER": "Desactivación de usuario",
+    "REACTIVATE_USER": "Reactivación de usuario"
+  },
+  "EntityType": {
+    "Material": "Material",
+    "Product": "Producto",
+    "Sale": "Venta",
+    "User": "Usuario"
+  },
+  "MovementLog": {
+    "title": "Log de movimientos",
+    "dateFrom": "Desde",
+    "dateTo": "Hasta",
+    "entityTypeLabel": "Tipo de entidad",
+    "entityTypeAll": "Todos los tipos",
+    "userLabel": "Usuario",
+    "userAll": "Todos los usuarios",
+    "tableDate": "Fecha",
+    "tableUser": "Usuario",
+    "tableAction": "Acción",
+    "tableEntity": "Entidad",
+    "tableDetails": "Detalles",
+    "pageIndicator": "Página {page} de {pageCount} ({total} registros)",
+    "previousPage": "Anterior",
+    "nextPage": "Siguiente"
   }
 }
