@@ -174,7 +174,13 @@
     "actionVoid": "Anulación",
     "reason": "Motivo",
     "performedBy": "Realizado por",
-    "reversedAt": "Fecha"
+    "reversedAt": "Fecha",
+    "searchPlaceholder": "Buscar por producto, color o cliente...",
+    "cityAll": "Todas las ciudades",
+    "saleTypeAll": "Todos los tipos",
+    "sellerAll": "Todos los vendedores",
+    "dateFrom": "Desde",
+    "dateTo": "Hasta"
   },
   "Users": {
     "title": "Usuarios",

@@ -3,6 +3,7 @@ import { writeAuditLog } from "@/lib/audit";
 import type {
   City,
   Size,
+  SaleType,
   PieceRole,
   MovementAction,
   StockMovementReason,
@@ -544,13 +545,53 @@ export class InsufficientStockError extends Error {
 
 export type SaleFilters = {
   sellerId?: string;
+  search?: string;
+  city?: City;
+  saleType?: SaleType;
+  // Already-resolved UTC instants (see MaterialFilters above) — filters
+  // on `saleDate`, the business-relevant date for a sale.
+  dateFrom?: Date;
+  dateTo?: Date;
 };
+
+// Shared between listSales and listReversedSales below — both need the
+// exact same filter-to-where translation, only `deletedAt` and
+// `orderBy` differ between an active and a reversed sale.
+function buildSaleWhereClause(
+  filters: SaleFilters,
+): Prisma.SaleWhereInput {
+  const { sellerId, search, city, saleType, dateFrom, dateTo } = filters;
+
+  return {
+    ...(sellerId ? { sellerId } : {}),
+    ...(city ? { city } : {}),
+    ...(saleType ? { saleType } : {}),
+    ...(dateFrom || dateTo
+      ? {
+          saleDate: {
+            ...(dateFrom ? { gte: dateFrom } : {}),
+            ...(dateTo ? { lte: dateTo } : {}),
+          },
+        }
+      : {}),
+    ...(search
+      ? {
+          OR: [
+            { description: { contains: search, mode: "insensitive" } },
+            { color: { contains: search, mode: "insensitive" } },
+            { customerName: { contains: search, mode: "insensitive" } },
+            { customerPhone: { contains: search, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+  };
+}
 
 export function listSales(filters: SaleFilters = {}) {
   return prisma.sale.findMany({
     where: {
       deletedAt: null,
-      ...(filters.sellerId ? { sellerId: filters.sellerId } : {}),
+      ...buildSaleWhereClause(filters),
     },
     // Only the seller's name, never the full User row (passwordHash etc.)
     include: { seller: { select: { name: true } } },
@@ -833,7 +874,7 @@ export async function listReversedSales(
   const sales = await prisma.sale.findMany({
     where: {
       deletedAt: { not: null },
-      ...(filters.sellerId ? { sellerId: filters.sellerId } : {}),
+      ...buildSaleWhereClause(filters),
     },
     include: { seller: { select: { name: true } } },
     orderBy: { deletedAt: "desc" },
