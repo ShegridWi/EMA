@@ -70,6 +70,20 @@ enum PaymentMethod {
   CASH
 }
 
+// Phase 9 — dedicated per-product stock ledger, not derived from
+// MovementLog (see 02-data-model.md "ProductStockMovement" for why: a
+// SALE already writes a MovementLog row scoped to the Sale entity, not
+// the Product, so reusing that table for a per-product view would mean
+// a duplicate log per sale or inferring before/after quantities from
+// free-form metadata).
+enum StockMovementReason {
+  CREATED
+  MANUAL_ADJUSTMENT
+  SALE
+  RETURN
+  VOID
+}
+
 // Append-only log actions. Extend this enum as new mutating actions are
 // added; never repurpose an existing value (breaks historical entries).
 enum MovementAction {
@@ -106,11 +120,12 @@ model User {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  materials    Material[]
-  products     Product[]
-  sales        Sale[]
-  movementLogs MovementLog[]
-  settings     UserSettings?
+  materials      Material[]
+  products       Product[]
+  sales          Sale[]
+  movementLogs   MovementLog[]
+  settings       UserSettings?
+  stockMovements ProductStockMovement[]
 }
 
 // Per-user preferences (phase 9) — created on demand with defaults the
@@ -173,7 +188,8 @@ model Product {
   updatedAt   DateTime    @updatedAt
   deletedAt   DateTime?
 
-  sales       Sale[]
+  sales          Sale[]
+  stockMovements ProductStockMovement[]
 }
 
 model Sale {
@@ -202,6 +218,31 @@ model Sale {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   deletedAt     DateTime?
+
+  stockMovements ProductStockMovement[]
+}
+
+// Phase 9 — see the StockMovementReason enum above for why this is a
+// dedicated table rather than filtered MovementLog entries. Every
+// function in lib/inventory.ts that changes Product.quantity writes one
+// row per affected product/piece here, in the same transaction as the
+// quantity change (CREATED on initial stock, MANUAL_ADJUSTMENT from an
+// edit, SALE/RETURN/VOID from the sale lifecycle). A SET container row
+// never carries real stock (see the Product model's design note in
+// 02-data-model.md), so it never gets a row here — only its pieces do.
+model ProductStockMovement {
+  id             String              @id @default(uuid())
+  productId      String
+  product        Product             @relation(fields: [productId], references: [id])
+  quantityBefore Int
+  quantityAfter  Int
+  delta          Int
+  reason         StockMovementReason
+  saleId         String?
+  sale           Sale?               @relation(fields: [saleId], references: [id])
+  userId         String
+  user           User                @relation(fields: [userId], references: [id])
+  createdAt      DateTime            @default(now())
 }
 
 model MovementLog {

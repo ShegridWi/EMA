@@ -291,5 +291,24 @@
     "language": "Language",
     "languageEs": "Español",
     "languageEn": "English"
+  },
+  "StockMovementReason": {
+    "CREATED": "Created",
+    "MANUAL_ADJUSTMENT": "Manual adjustment",
+    "SALE": "Sale",
+    "RETURN": "Return",
+    "VOID": "Void"
+  },
+  "ProductHistory": {
+    "title": "History for {description}",
+    "backToList": "Back to list",
+    "tableDate": "Date",
+    "tableBefore": "Before",
+    "tableAfter": "After",
+    "tableDelta": "Change",
+    "tableReason": "Reason",
+    "tableSale": "Related sale",
+    "tableUser": "Who",
+    "linkLabel": "History"
   }
 }

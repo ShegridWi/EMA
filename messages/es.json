@@ -291,5 +291,24 @@
     "language": "Idioma",
     "languageEs": "Español",
     "languageEn": "English"
+  },
+  "StockMovementReason": {
+    "CREATED": "Creación",
+    "MANUAL_ADJUSTMENT": "Ajuste manual",
+    "SALE": "Venta",
+    "RETURN": "Devolución",
+    "VOID": "Anulación"
+  },
+  "ProductHistory": {
+    "title": "Historial de {description}",
+    "backToList": "Volver al listado",
+    "tableDate": "Fecha",
+    "tableBefore": "Antes",
+    "tableAfter": "Después",
+    "tableDelta": "Cambio",
+    "tableReason": "Motivo",
+    "tableSale": "Venta relacionada",
+    "tableUser": "Quién",
+    "linkLabel": "Historial"
   }
 }

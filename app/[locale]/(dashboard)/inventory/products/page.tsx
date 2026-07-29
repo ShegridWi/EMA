@@ -91,6 +91,7 @@ export default async function ProductsPage({ searchParams }: Props) {
   const tSize = await getTranslations("Size");
   const tCity = await getTranslations("City");
   const tPieceRole = await getTranslations("PieceRole");
+  const tHistory = await getTranslations("ProductHistory");
 
   const isEmpty = sets.length === 0 && standalone.length === 0;
 
@@ -222,22 +223,30 @@ export default async function ProductsPage({ searchParams }: Props) {
                         {formatCurrency(set.price.toString())}
                       </p>
                     </div>
-                    {isAdmin && (
-                      <div className="flex gap-3">
-                        <Link
-                          href={`/inventory/products/${set.id}/edit`}
-                          className="text-sm underline"
-                        >
-                          {tCommon("edit")}
-                        </Link>
-                        {set.active ? (
-                          <DeactivateProductButton id={set.id} />
-                        ) : (
-                          <ReactivateProductButton id={set.id} />
-                        )}
-                        <DeleteProductButton id={set.id} />
-                      </div>
-                    )}
+                    <div className="flex gap-3">
+                      <Link
+                        href={`/inventory/products/${set.id}/history`}
+                        className="text-sm underline"
+                      >
+                        {tHistory("linkLabel")}
+                      </Link>
+                      {isAdmin && (
+                        <>
+                          <Link
+                            href={`/inventory/products/${set.id}/edit`}
+                            className="text-sm underline"
+                          >
+                            {tCommon("edit")}
+                          </Link>
+                          {set.active ? (
+                            <DeactivateProductButton id={set.id} />
+                          ) : (
+                            <ReactivateProductButton id={set.id} />
+                          )}
+                          <DeleteProductButton id={set.id} />
+                        </>
+                      )}
+                    </div>
                   </div>
                   <div className="overflow-x-auto border-t border-zinc-200 dark:border-zinc-800">
                     <table className="w-full min-w-[560px] text-left text-sm">
@@ -246,9 +255,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                           <th className="p-2">{t("kindUnit")}</th>
                           <th className="p-2">{t("quantity")}</th>
                           <th className="p-2">{t("price")}</th>
-                          {isAdmin && (
-                            <th className="p-2">{tCommon("actions")}</th>
-                          )}
+                          <th className="p-2">{tCommon("actions")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -264,9 +271,16 @@ export default async function ProductsPage({ searchParams }: Props) {
                             <td className="p-2">
                               {formatCurrency(piece.price.toString())}
                             </td>
-                            {isAdmin && (
-                              <td className="p-2">
+                            <td className="p-2">
                                 <div className="flex gap-3">
+                                  <Link
+                                    href={`/inventory/products/${piece.id}/history`}
+                                    className="underline"
+                                  >
+                                    {tHistory("linkLabel")}
+                                  </Link>
+                                  {isAdmin && (
+                                    <>
                                   <Link
                                     href={`/inventory/products/${piece.id}/edit`}
                                     className="underline"
@@ -279,9 +293,10 @@ export default async function ProductsPage({ searchParams }: Props) {
                                     <ReactivateProductButton id={piece.id} />
                                   )}
                                   <DeleteProductButton id={piece.id} />
+                                  </>
+                                  )}
                                 </div>
                               </td>
-                            )}
                           </tr>
                         ))}
                       </tbody>
@@ -307,7 +322,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                       <th className="p-2">{t("quantity")}</th>
                       <th className="p-2">{t("price")}</th>
                       <th className="p-2">{t("city")}</th>
-                      {isAdmin && <th className="p-2">{tCommon("actions")}</th>}
+                      <th className="p-2">{tCommon("actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -324,24 +339,32 @@ export default async function ProductsPage({ searchParams }: Props) {
                           {formatCurrency(product.price.toString())}
                         </td>
                         <td className="p-2">{tCity(product.city)}</td>
-                        {isAdmin && (
-                          <td className="p-2">
-                            <div className="flex gap-3">
-                              <Link
-                                href={`/inventory/products/${product.id}/edit`}
-                                className="underline"
-                              >
-                                {tCommon("edit")}
-                              </Link>
-                              {product.active ? (
-                                <DeactivateProductButton id={product.id} />
-                              ) : (
-                                <ReactivateProductButton id={product.id} />
-                              )}
-                              <DeleteProductButton id={product.id} />
-                            </div>
-                          </td>
-                        )}
+                        <td className="p-2">
+                          <div className="flex gap-3">
+                            <Link
+                              href={`/inventory/products/${product.id}/history`}
+                              className="underline"
+                            >
+                              {tHistory("linkLabel")}
+                            </Link>
+                            {isAdmin && (
+                              <>
+                                <Link
+                                  href={`/inventory/products/${product.id}/edit`}
+                                  className="underline"
+                                >
+                                  {tCommon("edit")}
+                                </Link>
+                                {product.active ? (
+                                  <DeactivateProductButton id={product.id} />
+                                ) : (
+                                  <ReactivateProductButton id={product.id} />
+                                )}
+                                <DeleteProductButton id={product.id} />
+                              </>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
