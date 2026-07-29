@@ -120,25 +120,31 @@ not speculatively.
 
 ## Interactive elements: always `cursor-pointer` + a hover state
 
-**Hard rule**: every clickable element — every `<button>`, every
-custom clickable `<div>`/`<span>` with an `onClick`, every element acting
-as an action trigger — must have `cursor-pointer` in its className, and
-must have a hover state with a transition (see [[motion-and-transitions]]
-for the exact `transition-colors duration-200 ease-in-out` treatment).
+**Hard rule**: every clickable element must have `cursor-pointer` in its
+className and a hover state with a transition (see
+[[motion-and-transitions]] for the exact `transition-colors duration-200
+ease-in-out` treatment). This covers every `<button>`, every `<select>`
+(clicking it opens a dropdown — it's an action trigger, not a text
+field), and any custom clickable `<div>`/`<span>` with an `onClick`.
 Native `<a>`/`Link` elements already get a pointer cursor from the
 browser, but **`<button>` does not** — Tailwind's Preflight resets button
 cursor to `default` to match modern browser behavior, so it never comes
-for free and must be added explicitly every time.
+for free and must be added explicitly every time. `<select>` cursor
+behavior is inconsistent across browsers for the same reason — set it
+explicitly rather than trusting the default.
 
 A repo-wide grep at the time this rule was added found **zero** uses of
-`cursor-pointer` anywhere — every `<button>` in the app (submit buttons,
-deactivate/delete/reactivate/return/void actions, the theme toggle, the
-search/filter submit buttons, dismiss buttons) currently shows the
-default arrow cursor instead of a pointer. Fix this for every button
-touched during the Phase 4 refactor — don't just fix the ones that
-happen to get restyled for other reasons, since a mix of pointer/
-non-pointer buttons across the app reads as a bug to users, not a style
-choice.
+`cursor-pointer` anywhere — every `<button>` (submit buttons,
+deactivate/delete/reactivate/return/void actions, the theme toggle,
+search/filter submit buttons, dismiss buttons) and every `<select>`
+(unit/city/role/size/payment-method dropdowns, the filter selects on
+every list page) currently shows the default arrow cursor. Plain text
+`<input>`/`<textarea>` fields are the one exception — leave those at the
+browser's default text-caret (`cursor-text`) cursor, since they're not
+action triggers. Fix every button and select touched during the Phase 4
+refactor — don't just fix the ones that happen to get restyled for other
+reasons, since a mix of pointer/non-pointer controls across the app reads
+as a bug to users, not a style choice.
 
 ```tsx
 // Bad — no pointer cursor (browser/Preflight default is `cursor: default`
@@ -147,13 +153,76 @@ choice.
 
 // Good
 <button className="cursor-pointer rounded-md bg-primary px-4 py-2 text-primary-foreground transition-colors duration-200 ease-in-out hover:bg-primary/90">
+
+// Select — same rule, cursor-pointer + hover + transition
+<select className="cursor-pointer rounded-md border border-border bg-background px-3 py-2 text-foreground transition-colors duration-200 ease-in-out hover:border-primary">
 ```
 
-Once the shared `Button` primitive from the previous section exists, bake
-`cursor-pointer` and the hover transition into it once so every caller
-gets both automatically — this rule matters most for any interactive
-element that *isn't* going through that primitive (icon-only buttons,
-one-off clickable elements).
+Once the shared `Button`/`Select` primitives from the previous section
+exist, bake `cursor-pointer` and the hover transition into them once so
+every caller gets both automatically — this rule matters most for any
+interactive element that *isn't* going through those primitives
+(icon-only buttons, one-off clickable elements).
+
+### Icon-only or icon-plus-text interactive elements
+
+An icon inside a button/link automatically follows that element's text
+color and hover transition (icons use `currentColor` — see
+[[icon-system]]), so a `hover:text-primary transition-colors` on the
+parent is enough for most cases and no separate animation is needed on
+the `<svg>` itself. Reserve a dedicated icon-level animation for
+icon-*only* controls where the icon *is* the entire clickable surface
+(e.g. the theme toggle, the toast dismiss button) — for those, add a
+subtle `hover:scale-110 transition-transform duration-200 ease-in-out` on
+the icon (plain Tailwind is enough here; this is a single-property hover
+effect, not an enter/exit case, so `framer-motion` isn't warranted per
+[[motion-and-transitions]]'s division-of-labor rule).
+
+## Layout patterns
+
+Best practices for page/section structure, beyond the per-component
+color/spacing/breakpoint rules above:
+
+- **Standard page shell**: keep the existing
+  `<div className="flex flex-col gap-6">` → header row
+  (`flex items-center justify-between`) → filter form → content pattern
+  already used by every list page — it's a reasonable convention, don't
+  reinvent it per page. Apply [[tailwind-conventions]]'s mobile-first
+  rule to the header row specifically: stack title/actions vertically
+  below `sm:` (`flex-col sm:flex-row sm:items-center sm:justify-between`)
+  rather than forcing them onto one cramped row on a narrow screen.
+- **Constrain content width on large screens**: `main` in
+  `app/[locale]/(dashboard)/layout.tsx` currently has no max-width, so
+  content stretches edge-to-edge on an ultra-wide monitor. Add a
+  `mx-auto w-full max-w-7xl` wrapper around `{children}` (or on `main`
+  itself) so line lengths and table density stay readable at any viewport
+  — this is a one-line fix with no other layout implications.
+- **Dashboard shell is the nav's job, not `main`'s**: the sidebar-vs-
+  content split (`components/dashboard-nav.tsx` +
+  `app/[locale]/(dashboard)/layout.tsx`) should become a `flex`/`grid`
+  that collapses the sidebar into a drawer below `lg:` (see
+  `DESIGN_REVIEW.md` §3) — don't solve mobile nav by shrinking the
+  sidebar's fixed `w-56`, replace the fixed-width-always approach with a
+  breakpoint-conditional one (hidden + toggle button below `lg:`, static
+  `lg:flex` sidebar above it).
+- **Prefer `gap` over margin-based spacing** between sibling elements in
+  a flex/grid container (already the norm in this codebase — keep doing
+  it) — don't reintroduce `mb-4`/`mt-4` chains when a parent `gap-4`
+  says the same thing once.
+- **Forms**: the current `max-w-md` single-column form layout is fine on
+  mobile, but on wider screens (`sm:`/`md:`) consider a two-column grid
+  for short-answer fields (e.g. `grid grid-cols-1 gap-4 sm:grid-cols-2`
+  for fields like quantity/unit or city/date pairs) so long forms
+  (`SaleForm`, `SetProductForm`) don't force excessive scrolling on
+  desktop — but don't force this pattern onto every form mechanically;
+  apply it where a form actually has enough same-length fields to pair
+  up sensibly.
+- **Tables**: `overflow-x-auto` + `min-w-[...]` (today's pattern) is an
+  acceptable baseline for admin-tool tables, but per `DESIGN_REVIEW.md`
+  §3 the better mobile treatment below `md:` is a stacked card per row
+  (each cell becomes a labeled line) rather than horizontal scroll —
+  scope this per table during the Phase 4 refactor, it's more work than
+  the other layout items above so don't block on it.
 
 ## Icons and motion
 

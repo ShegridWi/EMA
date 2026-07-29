@@ -175,6 +175,50 @@ the deviation here rather than shipping it silently (per
 `.claude/README.md` §3's explicit instruction to prioritize legibility
 over the literal suggested mapping).
 
+## Form controls: always set explicit background + text color, never `bg-transparent` alone
+
+**Hard rule**: every `<input>`, `<select>`, and `<textarea>` must set
+`bg-background text-foreground` explicitly (in addition to
+`border-border`) — never just `bg-transparent` relying on an inherited
+text color. A repo-wide grep at the time this rule was added found **67
+occurrences of `bg-transparent`** across every form/filter input and
+**24 `<select>` elements**, none of them setting an explicit text color.
+
+This is the concrete cause of the "can't distinguish the dropdown text"
+bug: a `<select>` styled with `bg-transparent` inherits `text-foreground`
+from its ancestor for the closed control, but the **open dropdown
+list/`<option>` popup is rendered by the OS/browser itself in many
+desktop browsers**, not by this app's CSS — Chrome/Firefox/Edge on
+Windows in particular often render that popup with an OS-native white (or
+OS-theme) background regardless of the page's dark mode, while still
+partially honoring the inherited text color. The result: light/cream
+`foreground` text (correct for a dark `background`) lands on a
+white-ish OS popup background, and becomes hard or impossible to read.
+
+**Mitigation** (do this for every input/select/textarea, not just ones
+that visibly break):
+
+```tsx
+// Bad — bg-transparent + no explicit text color; breaks in the exact
+// way described above once the OS renders its own dropdown background
+<select className="rounded-md border border-border bg-transparent px-3 py-2">
+
+// Good — explicit surface + text color on the control itself
+<select className="rounded-md border border-border bg-background px-3 py-2 text-foreground">
+```
+
+**Known limitation, not fully fixable with CSS alone**: some
+browser/OS combinations still render the *open* `<option>` list with
+OS-controlled colors that page CSS cannot override at all (this is a
+long-standing native `<select>` limitation, not specific to this
+project). `bg-background text-foreground` on the `<select>` itself fixes
+the closed control and is enough for the common cases, but if a specific
+browser/OS combination is still reported as unreadable when the dropdown
+is *open*, the only full fix is replacing that native `<select>` with a
+custom-built listbox (e.g. a headless combobox pattern) — treat that as a
+separate, explicitly-scoped follow-up if it comes up, not something to
+solve preemptively across all 24 selects.
+
 ## Adding a new color in the future
 
 1. Never add a literal hex or a raw Tailwind palette class in a component.
