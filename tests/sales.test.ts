@@ -401,6 +401,26 @@ describe("returnSale / voidSale — UNIT", () => {
     expect(returnLogs).toHaveLength(1);
   });
 
+  it("stores the optional reason in the MovementLog metadata", async () => {
+    await returnSale(saleId, testUserId, "Cliente devolvió por talla");
+    const [log] = await prisma.movementLog.findMany({
+      where: { entityId: saleId, action: "RETURN_SALE" },
+    });
+    expect((log.metadata as Record<string, unknown>).reason).toBe(
+      "Cliente devolvió por talla",
+    );
+  });
+
+  it("omits reason from metadata when none is given", async () => {
+    await voidSale(saleId, testUserId);
+    const [log] = await prisma.movementLog.findMany({
+      where: { entityId: saleId, action: "VOID_SALE" },
+    });
+    expect(log.metadata as Record<string, unknown>).not.toHaveProperty(
+      "reason",
+    );
+  });
+
   it("rejects reversing the same sale twice, without double-restoring stock", async () => {
     await returnSale(saleId, testUserId);
 

@@ -26,3 +26,15 @@ export const createSaleSchema = z
   });
 
 export type CreateSaleInput = z.infer<typeof createSaleSchema>;
+
+// Reason is optional — a free-text note on *why* the sale is being
+// returned or voided (e.g. "cliente devolvió por talla" / "registrado
+// por error"). Stored in the MovementLog entry's metadata, not on the
+// Sale row itself — it's context about the reversal action, not a fact
+// about the original sale.
+export const reverseSaleSchema = z.object({
+  id: z.uuid(),
+  reason: z.string().min(1).optional(),
+});
+
+export type ReverseSaleInput = z.infer<typeof reverseSaleSchema>;

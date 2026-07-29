@@ -65,16 +65,37 @@ When registering a sale:
   corresponding inventory (the individual piece if it's a unit, or the
   corresponding pieces if it's a full set).
 
-### Sale statuses (to be defined in detail during implementation)
+### Sale statuses
 - `cash` — 100% paid, no pending payment management needed.
 - `order` — custom order, may have a pending balance and a delivery date.
 - `reservation` — partial payment with pending balance, not necessarily a
   large order.
 
-> Note: the business mentioned "order, cash sale, others" and separately
-> "reservation with partial payment" — need to confirm with the business
-> whether **order** and **reservation** are the same concept or two
-> different flows. See `04-scope-mvp.md`, assumptions section.
+`order` and `reservation` are confirmed as two distinct flows (not the
+same concept under different names) — see the resolved assumption in
+`04-scope-mvp.md`.
+
+### Returns and voids (feature/sales)
+
+**Admin only.** From the sales history, an admin can mark a sale as
+**returned** (the customer brought the product back) or **void** it
+(the sale was registered by mistake and should be undone). Both:
+
+- Restore the stock the sale deducted — the whole quantity, back onto
+  the same product (or every piece, for a set sale).
+- Are recorded with a soft delete on the `Sale` row (`deletedAt`) —
+  **never** a physical delete, consistent with section 5 below. The
+  sale disappears from the active history but is kept for audit.
+- Accept an optional free-text **reason** (e.g. "customer returned it,
+  wrong size" / "registered by mistake") — recorded in the movement
+  log entry for the action, not as a field on the sale itself, since
+  it's context about the reversal, not about the original sale.
+- Only differ in which action is logged (`RETURN_SALE` vs
+  `VOID_SALE`), so a later report can tell a genuine customer return
+  apart from an admin correcting a data-entry mistake.
+
+A sale that was already returned or voided can't be reversed again
+(the deduction was already restored once).
 
 ## 4. Cities
 

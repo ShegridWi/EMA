@@ -15,11 +15,15 @@ export function SaleActions({ saleId }: { saleId: string }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  // window.prompt() returns null if the admin hits Cancel — treated the
+  // same as leaving it blank (no reason recorded), since intent to
+  // proceed was already confirmed by the window.confirm() above.
   function handleReturn() {
     if (!window.confirm(t("confirmReturn"))) return;
+    const reason = window.prompt(t("reasonPrompt"))?.trim() || undefined;
     setError(null);
     startTransition(async () => {
-      const result = await returnSaleAction({ id: saleId });
+      const result = await returnSaleAction({ id: saleId, reason });
       if (!result.success) {
         setError(result.error === "not_found" ? "not_found" : "generic");
         return;
@@ -30,9 +34,10 @@ export function SaleActions({ saleId }: { saleId: string }) {
 
   function handleVoid() {
     if (!window.confirm(t("confirmVoid"))) return;
+    const reason = window.prompt(t("reasonPrompt"))?.trim() || undefined;
     setError(null);
     startTransition(async () => {
-      const result = await voidSaleAction({ id: saleId });
+      const result = await voidSaleAction({ id: saleId, reason });
       if (!result.success) {
         setError(result.error === "not_found" ? "not_found" : "generic");
         return;

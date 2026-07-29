@@ -104,6 +104,48 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
           placeholder={t("searchProductPlaceholder")}
           className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
         />
+
+        {/*
+          Quick-pick results list under the search box. Clicking a row
+          just updates `productId` — the same state the <select> below
+          reads — so the dropdown's selection updates automatically
+          without any extra wiring. Each row (and each <option>) shows
+          whether the product is a Set or a Unit, since that isn't
+          obvious from the description alone.
+        */}
+        <div className="max-h-48 overflow-y-auto rounded-md border border-zinc-300 dark:border-zinc-700">
+          {filteredProducts.length === 0 ? (
+            <p className="p-2 text-xs text-zinc-500 dark:text-zinc-400">
+              {t("searchResultsEmpty")}
+            </p>
+          ) : (
+            <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {filteredProducts.map((product) => {
+                const isSelected = product.id === effectiveProductId;
+                return (
+                  <li key={product.id}>
+                    <button
+                      type="button"
+                      onClick={() => setProductId(product.id)}
+                      aria-pressed={isSelected}
+                      className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900 ${
+                        isSelected ? "bg-zinc-100 dark:bg-zinc-900" : ""
+                      }`}
+                    >
+                      <span>
+                        {product.description} ({product.color}, {product.size})
+                      </span>
+                      <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+                        {product.kind === "SET" ? t("kindSet") : t("kindUnit")}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
         <select
           id="productId"
           name="productId"
@@ -114,7 +156,8 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
         >
           {filteredProducts.map((product) => (
             <option key={product.id} value={product.id}>
-              {product.description} ({product.color}, {product.size})
+              {product.description} ({product.color}, {product.size}) —{" "}
+              {product.kind === "SET" ? t("kindSet") : t("kindUnit")}
             </option>
           ))}
         </select>

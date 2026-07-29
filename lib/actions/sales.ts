@@ -1,8 +1,7 @@
 "use server";
 
-import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { createSaleSchema } from "@/lib/validations/sale";
+import { createSaleSchema, reverseSaleSchema } from "@/lib/validations/sale";
 import {
   createSale,
   returnSale,
@@ -36,25 +35,28 @@ export async function createSaleAction(input: unknown) {
   }
 }
 
-const saleIdSchema = z.object({ id: z.uuid() });
-
 // Marking a sale as returned or voiding it are ADMIN-only, always a soft
 // delete on the Sale row, and always restore the stock createSale
 // deducted (see lib/inventory.ts's reverseSale for why both share the
 // same mechanics and only differ in which MovementAction gets logged).
+// `reason` is an optional free-text note on why (see reverseSaleSchema).
 export async function returnSaleAction(input: unknown) {
   const session = await auth();
   if (session?.user.role !== "ADMIN") {
     return { success: false as const, error: "Forbidden" };
   }
 
-  const parsed = saleIdSchema.safeParse(input);
+  const parsed = reverseSaleSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false as const, error: parsed.error.flatten() };
   }
 
   try {
-    const sale = await returnSale(parsed.data.id, session.user.id);
+    const sale = await returnSale(
+      parsed.data.id,
+      session.user.id,
+      parsed.data.reason,
+    );
     return { success: true as const, data: serializeSale(sale) };
   } catch (error) {
     if (error instanceof SaleNotFoundError) {
@@ -70,13 +72,17 @@ export async function voidSaleAction(input: unknown) {
     return { success: false as const, error: "Forbidden" };
   }
 
-  const parsed = saleIdSchema.safeParse(input);
+  const parsed = reverseSaleSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false as const, error: parsed.error.flatten() };
   }
 
   try {
-    const sale = await voidSale(parsed.data.id, session.user.id);
+    const sale = await voidSale(
+      parsed.data.id,
+      session.user.id,
+      parsed.data.reason,
+    );
     return { success: true as const, data: serializeSale(sale) };
   } catch (error) {
     if (error instanceof SaleNotFoundError) {

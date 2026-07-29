@@ -123,6 +123,7 @@
     "product": "Producto",
     "selectProduct": "Selecciona un producto",
     "searchProductPlaceholder": "Buscar producto por descripción o color...",
+    "searchResultsEmpty": "No se encontraron productos.",
     "unitAvailable": "{count} disponibles",
     "setNoStockShown": "Conjunto — revisa el stock de cada pieza en Producto terminado",
     "quantity": "Cantidad",
@@ -150,6 +151,7 @@
     "voidSale": "Anular venta",
     "confirmReturn": "¿Confirmas que este producto fue devuelto? Se restaurará el stock y la venta se quitará del historial activo.",
     "confirmVoid": "¿Confirmas que quieres anular esta venta? Se restaurará el stock y la venta se quitará del historial activo.",
+    "reasonPrompt": "Motivo (opcional):",
     "errorNotFound": "Esta venta ya no está disponible (puede que ya haya sido devuelta o anulada)."
   }
 }

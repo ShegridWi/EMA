@@ -518,6 +518,7 @@ async function reverseSale(
   id: string,
   userId: string,
   action: Extract<MovementAction, "RETURN_SALE" | "VOID_SALE">,
+  reason?: string,
 ) {
   return prisma.$transaction(async (tx) => {
     const sale = await tx.sale.findFirst({ where: { id, deletedAt: null } });
@@ -560,17 +561,21 @@ async function reverseSale(
       action,
       entityType: "Sale",
       entityId: sale.id,
-      metadata: { productId: sale.productId, quantity: sale.quantity },
+      metadata: {
+        productId: sale.productId,
+        quantity: sale.quantity,
+        ...(reason ? { reason } : {}),
+      },
     });
 
     return updatedSale;
   });
 }
 
-export function returnSale(id: string, userId: string) {
-  return reverseSale(id, userId, "RETURN_SALE");
+export function returnSale(id: string, userId: string, reason?: string) {
+  return reverseSale(id, userId, "RETURN_SALE", reason);
 }
 
-export function voidSale(id: string, userId: string) {
-  return reverseSale(id, userId, "VOID_SALE");
+export function voidSale(id: string, userId: string, reason?: string) {
+  return reverseSale(id, userId, "VOID_SALE", reason);
 }
