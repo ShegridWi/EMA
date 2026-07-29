@@ -78,7 +78,9 @@
     "city": "Ciudad",
     "purchasePrice": "Precio de compra",
     "colorOptional": "Color (opcional)",
-    "backToList": "Volver al listado"
+    "backToList": "Volver al listado",
+    "createdFrom": "Creado desde",
+    "createdTo": "Creado hasta"
   },
   "PieceRole": {
     "TOP": "Top",
@@ -106,7 +108,10 @@
     "topQuantity": "Cantidad inicial — Top",
     "bottomQuantity": "Cantidad inicial — Bottom",
     "includeCap": "¿Incluye gorro?",
-    "capQuantity": "Cantidad inicial — Gorro"
+    "capQuantity": "Cantidad inicial — Gorro",
+    "sizeAll": "Todas las tallas",
+    "createdFrom": "Creado desde",
+    "createdTo": "Creado hasta"
   },
   "SaleType": {
     "CASH": "Contado",

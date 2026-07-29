@@ -4,17 +4,32 @@ import { listMaterials } from "@/lib/inventory";
 import { Link } from "@/i18n/navigation";
 import { DeleteMaterialButton } from "@/components/materials/delete-material-button";
 import { formatCurrency } from "@/lib/currency";
+import { zonedTimeToUtc } from "@/lib/timezone";
 
 type Props = {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; from?: string; to?: string }>;
 };
 
 export default async function MaterialsPage({ searchParams }: Props) {
-  const { q } = await searchParams;
+  const { q, from, to } = await searchParams;
   const session = await auth();
   const isAdmin = session?.user.role === "ADMIN";
 
-  const materials = await listMaterials({ search: q });
+  // Date-only inputs interpreted as midnight in *this user's* configured
+  // timezone, not the server's local time (05-nextjs-conventions.md
+  // "Timezone handling").
+  const timeZone = session!.user.settings.timezone;
+  const createdFrom = from ? zonedTimeToUtc(from, timeZone) : undefined;
+  const createdTo = to
+    ? zonedTimeToUtc(to, timeZone, {
+        hour: 23,
+        minute: 59,
+        second: 59,
+        millisecond: 999,
+      })
+    : undefined;
+
+  const materials = await listMaterials({ search: q, createdFrom, createdTo });
 
   const t = await getTranslations("Materials");
   const tCommon = await getTranslations("Common");
@@ -35,7 +50,7 @@ export default async function MaterialsPage({ searchParams }: Props) {
         )}
       </div>
 
-      <form className="flex gap-2">
+      <form className="flex flex-wrap items-end gap-2">
         <input
           type="search"
           name="q"
@@ -43,6 +58,30 @@ export default async function MaterialsPage({ searchParams }: Props) {
           placeholder={t("searchPlaceholder")}
           className="w-full max-w-sm rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
         />
+        <div className="flex flex-col gap-1">
+          <label htmlFor="from" className="text-sm font-medium">
+            {t("createdFrom")}
+          </label>
+          <input
+            id="from"
+            name="from"
+            type="date"
+            defaultValue={from ?? ""}
+            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="to" className="text-sm font-medium">
+            {t("createdTo")}
+          </label>
+          <input
+            id="to"
+            name="to"
+            type="date"
+            defaultValue={to ?? ""}
+            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+          />
+        </div>
         <button
           type="submit"
           className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"

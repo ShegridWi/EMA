@@ -4,18 +4,43 @@ import { listProducts } from "@/lib/inventory";
 import { Link } from "@/i18n/navigation";
 import { DeleteProductButton } from "@/components/products/delete-product-button";
 import { formatCurrency } from "@/lib/currency";
+import { zonedTimeToUtc } from "@/lib/timezone";
+import { Size } from "@/app/generated/prisma/enums";
 import type { Product } from "@/app/generated/prisma/client";
 
 type Props = {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; size?: string; from?: string; to?: string }>;
 };
 
 export default async function ProductsPage({ searchParams }: Props) {
-  const { q } = await searchParams;
+  const { q, size, from, to } = await searchParams;
   const session = await auth();
   const isAdmin = session?.user.role === "ADMIN";
 
-  const products = await listProducts({ search: q });
+  const sizeFilter = size && (Object.values(Size) as string[]).includes(size)
+    ? (size as Size)
+    : undefined;
+
+  // Date-only inputs interpreted as midnight in *this user's* configured
+  // timezone, not the server's local time (05-nextjs-conventions.md
+  // "Timezone handling").
+  const timeZone = session!.user.settings.timezone;
+  const createdFrom = from ? zonedTimeToUtc(from, timeZone) : undefined;
+  const createdTo = to
+    ? zonedTimeToUtc(to, timeZone, {
+        hour: 23,
+        minute: 59,
+        second: 59,
+        millisecond: 999,
+      })
+    : undefined;
+
+  const products = await listProducts({
+    search: q,
+    size: sizeFilter,
+    createdFrom,
+    createdTo,
+  });
 
   const sets = products.filter((p) => p.kind === "SET");
   const setIds = new Set(sets.map((s) => s.id));
@@ -65,7 +90,7 @@ export default async function ProductsPage({ searchParams }: Props) {
         )}
       </div>
 
-      <form className="flex gap-2">
+      <form className="flex flex-wrap items-end gap-2">
         <input
           type="search"
           name="q"
@@ -73,6 +98,48 @@ export default async function ProductsPage({ searchParams }: Props) {
           placeholder={t("searchPlaceholder")}
           className="w-full max-w-sm rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
         />
+        <div className="flex flex-col gap-1">
+          <label htmlFor="size" className="text-sm font-medium">
+            {t("size")}
+          </label>
+          <select
+            id="size"
+            name="size"
+            defaultValue={sizeFilter ?? ""}
+            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+          >
+            <option value="">{t("sizeAll")}</option>
+            {Object.values(Size).map((value) => (
+              <option key={value} value={value}>
+                {tSize(value)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="from" className="text-sm font-medium">
+            {t("createdFrom")}
+          </label>
+          <input
+            id="from"
+            name="from"
+            type="date"
+            defaultValue={from ?? ""}
+            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="to" className="text-sm font-medium">
+            {t("createdTo")}
+          </label>
+          <input
+            id="to"
+            name="to"
+            type="date"
+            defaultValue={to ?? ""}
+            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+          />
+        </div>
         <button
           type="submit"
           className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"

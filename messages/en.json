@@ -78,7 +78,9 @@
     "city": "City",
     "purchasePrice": "Purchase price",
     "colorOptional": "Color (optional)",
-    "backToList": "Back to list"
+    "backToList": "Back to list",
+    "createdFrom": "Created from",
+    "createdTo": "Created to"
   },
   "PieceRole": {
     "TOP": "Top",
@@ -106,7 +108,10 @@
     "topQuantity": "Starting quantity — Top",
     "bottomQuantity": "Starting quantity — Bottom",
     "includeCap": "Includes a cap?",
-    "capQuantity": "Starting quantity — Cap"
+    "capQuantity": "Starting quantity — Cap",
+    "sizeAll": "All sizes",
+    "createdFrom": "Created from",
+    "createdTo": "Created to"
   },
   "SaleType": {
     "CASH": "Cash",

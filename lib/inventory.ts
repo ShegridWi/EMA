@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { writeAuditLog } from "@/lib/audit";
 import type {
   City,
+  Size,
   PieceRole,
   MovementAction,
 } from "@/app/generated/prisma/enums";
@@ -46,15 +47,28 @@ export function serializeMaterial(material: Material): SerializedMaterial {
 export type MaterialFilters = {
   search?: string;
   city?: City;
+  // Both already-resolved UTC instants (phase 9b: the caller converts a
+  // date-only form input via lib/timezone.ts's zonedTimeToUtc using the
+  // viewing user's timezone — this layer only ever deals in UTC).
+  createdFrom?: Date;
+  createdTo?: Date;
 };
 
 export function listMaterials(filters: MaterialFilters = {}) {
-  const { search, city } = filters;
+  const { search, city, createdFrom, createdTo } = filters;
 
   return prisma.material.findMany({
     where: {
       deletedAt: null,
       ...(city ? { city } : {}),
+      ...(createdFrom || createdTo
+        ? {
+            createdAt: {
+              ...(createdFrom ? { gte: createdFrom } : {}),
+              ...(createdTo ? { lte: createdTo } : {}),
+            },
+          }
+        : {}),
       ...(search
         ? {
             OR: [
@@ -150,15 +164,37 @@ export function serializeProduct(product: Product): SerializedProduct {
 export type ProductFilters = {
   search?: string;
   city?: City;
+  size?: Size;
+  // Already-resolved UTC instants — see MaterialFilters above.
+  createdFrom?: Date;
+  createdTo?: Date;
 };
 
+// `size` matches at the row level, including SET containers and their
+// pieces independently. Pieces are only *guaranteed* to share their
+// parent SET's size at creation time (createSetProduct copies it) —
+// `updateProduct` allows editing `size` on any single row afterward,
+// with no cross-row sync back to the set. In the rare case a piece's
+// size has since diverged from its set, filtering by the set's size
+// will render the set with that piece silently missing from its table
+// (it reappears once the filter is cleared) — a narrow display quirk,
+// not a data problem, not worth changing filter semantics over.
 export function listProducts(filters: ProductFilters = {}) {
-  const { search, city } = filters;
+  const { search, city, size, createdFrom, createdTo } = filters;
 
   return prisma.product.findMany({
     where: {
       deletedAt: null,
       ...(city ? { city } : {}),
+      ...(size ? { size } : {}),
+      ...(createdFrom || createdTo
+        ? {
+            createdAt: {
+              ...(createdFrom ? { gte: createdFrom } : {}),
+              ...(createdTo ? { lte: createdTo } : {}),
+            },
+          }
+        : {}),
       ...(search
         ? {
             OR: [
