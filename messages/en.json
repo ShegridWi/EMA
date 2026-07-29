@@ -162,5 +162,29 @@
     "reason": "Reason",
     "performedBy": "Performed by",
     "reversedAt": "Date"
+  },
+  "Users": {
+    "title": "Users",
+    "addNew": "New user",
+    "newTitle": "New user",
+    "editTitle": "Edit user",
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "passwordOptional": "Password (leave blank to keep it unchanged)",
+    "role": "Role",
+    "city": "City",
+    "searchPlaceholder": "Search by name or email...",
+    "roleAll": "All roles",
+    "cityAll": "All cities",
+    "tabActive": "Active",
+    "tabInactive": "Inactive",
+    "deactivate": "Deactivate",
+    "confirmDeactivate": "Are you sure you want to deactivate this user? They won't be able to sign in again.",
+    "reactivate": "Reactivate",
+    "confirmReactivate": "Confirm you want to reactivate this user? They will be able to sign in again.",
+    "reasonPrompt": "Reason (optional):",
+    "errorEmailInUse": "That email is already in use by another user.",
+    "errorCannotDeactivateSelf": "You can't deactivate your own account."
   }
 }

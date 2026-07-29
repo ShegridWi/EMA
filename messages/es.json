@@ -162,5 +162,29 @@
     "reason": "Motivo",
     "performedBy": "Realizado por",
     "reversedAt": "Fecha"
+  },
+  "Users": {
+    "title": "Usuarios",
+    "addNew": "Nuevo usuario",
+    "newTitle": "Nuevo usuario",
+    "editTitle": "Editar usuario",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "passwordOptional": "Contraseña (dejar en blanco para no cambiarla)",
+    "role": "Rol",
+    "city": "Ciudad",
+    "searchPlaceholder": "Buscar por nombre o correo...",
+    "roleAll": "Todos los roles",
+    "cityAll": "Todas las ciudades",
+    "tabActive": "Activos",
+    "tabInactive": "Inactivos",
+    "deactivate": "Desactivar",
+    "confirmDeactivate": "¿Seguro que quieres desactivar este usuario? No podrá volver a iniciar sesión.",
+    "reactivate": "Reactivar",
+    "confirmReactivate": "¿Confirmas que quieres reactivar este usuario? Podrá volver a iniciar sesión.",
+    "reasonPrompt": "Motivo (opcional):",
+    "errorEmailInUse": "Ese correo ya está en uso por otro usuario.",
+    "errorCannotDeactivateSelf": "No puedes desactivar tu propia cuenta."
   }
 }
