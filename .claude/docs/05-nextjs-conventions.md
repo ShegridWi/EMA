@@ -221,6 +221,54 @@ allowed to touch `Material`/`Product` quantity fields directly.
 
 - Tailwind's `class`-based dark mode strategy + `next-themes` for
   toggling/persisting the user's choice. No custom theme engine.
+- Phase 9: `UserSettings.theme` seeds the *initial* theme for a session
+  (see `01-business-rules.md` section 8) — a manual toggle mid-session
+  still just works through the existing `next-themes` cookie, it no
+  longer starts from a fixed default regardless of who's logged in.
+
+## Timezone handling (phase 9)
+
+The business only operates in Bolivia (`America/La_Paz`, fixed UTC-4,
+no DST), but the timezone is a per-user setting
+(`UserSettings.timezone`, `02-data-model.md`), not a hardcoded constant
+— don't assume every user is on the default.
+
+**Rule**: every `DateTime` column is stored in UTC (Postgres/Prisma's
+default — nothing special to do there). Converting to/from a specific
+timezone only happens at the two boundaries where a human is involved:
+
+1. **Parsing a date-only form input** (`<input type="date">`, e.g. a
+   report's date-range filter or the movement log's date filter): the
+   value is a plain `YYYY-MM-DD` string with no timezone info. It must
+   be interpreted as midnight in *that user's* configured timezone, not
+   the server's local time — `` `${value}T00:00:00` `` (a bare local-time
+   string) is wrong once this runs on a server whose OS timezone isn't
+   Bolivia's.
+2. **Displaying a stored UTC instant**: format it in the *viewing*
+   user's configured timezone, not the server's.
+
+`lib/timezone.ts` implements both without adding a dependency
+(`date-fns-tz`/`luxon` are unnecessary for this — CLAUDE.md section 1,
+avoid dependencies that aren't earning their keep):
+
+- `formatInTimezone(date, timeZone, locale, options)`: a thin wrapper
+  around `Intl.DateTimeFormat(locale, { ...options, timeZone })` —
+  `Intl` already knows how to render any IANA zone correctly, DST or
+  not, no extra library needed.
+- `zonedTimeToUtc(dateOnlyString, timeZone)`: the harder direction
+  (wall-clock-in-a-zone → correct UTC instant) has no direct built-in,
+  but doesn't need a library either. The trick: format a UTC guess in
+  the target zone via `Intl.DateTimeFormat(...).formatToParts()`, read
+  the offset back out, and correct the guess by that offset. This
+  generalizes to any IANA zone (even DST-observing ones), even though
+  in practice Bolivia's fixed -4:00 makes it a non-issue for this
+  business specifically.
+
+Every date coming from a form and every date going into a list/PDF
+should go through one of these two — grep for bare
+`new Date(\`${...}T00:00:00\`)` or `new Intl.DateTimeFormat(locale)`
+(no `timeZone` option) touching a business date before adding a new one;
+either is a sign the server's local timezone is leaking in by accident.
 
 ## PDF generation (weekly report + manual reports)
 

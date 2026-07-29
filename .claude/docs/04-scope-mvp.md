@@ -16,6 +16,27 @@
    English).
 10. Soft delete on every entity.
 
+## Phase 9 — first post-MVP improvement round (in progress)
+
+The MVP above shipped in full with `feature/reports` (phase 8). These
+items were requested directly by the business afterward — see
+`.prompts/09-system-improvements.md` for the sub-phase breakdown
+(`feature/user-settings`, `feature/timezone-utc`,
+`feature/inventory-filters`, `feature/product-deactivate`,
+`feature/product-stock-history`):
+
+- Per-user settings (timezone, theme, language) — `UserSettings`,
+  `01-business-rules.md` section 8.
+- Dates stored in UTC, displayed in the viewing user's configured
+  timezone (`America/La_Paz` by default) — `05-nextjs-conventions.md`
+  "Timezone handling".
+- Better filters on Materials (date range) and Finished product (size,
+  date range).
+- Per-product stock movement history — `ProductStockMovement`,
+  `01-business-rules.md` section 10.
+- Reversible product deactivation + an active/inactive tab, same
+  pattern as user deactivation (phase 6).
+
 ## Out of MVP scope (phase 2 / future)
 
 - Multi-branch beyond the 2 fixed cities (dynamic city/branch catalog).

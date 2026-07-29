@@ -19,6 +19,9 @@ Two roles: **Admin** and **Seller**.
 | Users | Register new admins / sellers | ❌ | ✅ |
 | Users | Edit / deactivate users | ❌ | ✅ |
 | Movement log | View | ❌ | ✅ |
+| Settings (phase 9) | Edit own timezone / theme / language | ✅ | ✅ |
+| Inventory — Finished product | Deactivate / reactivate (phase 9) | ❌ | ✅ |
+| Inventory — Finished product | View a product's stock history (phase 9) | ✅ | ✅ |
 
 ## Implementation notes
 
