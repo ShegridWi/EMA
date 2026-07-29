@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { listMovementLogs, formatMetadata, ENTITY_TYPES } from "@/lib/movement-log";
 import { listUsers } from "@/lib/users";
+import { zonedTimeToUtc, formatInTimezone } from "@/lib/timezone";
 import { Link } from "@/i18n/navigation";
 
 const PAGE_SIZE = 25;
@@ -44,10 +45,21 @@ export default async function MovementLogPage({ params, searchParams }: Props) {
   }
 
   const page = Math.max(1, Number(pageParam) || 1);
-  // Date-only inputs (<input type="date">) — widen "to" to the end of
-  // that day so the filter is inclusive of the whole selected range.
-  const fromDate = from ? new Date(`${from}T00:00:00`) : undefined;
-  const toDate = to ? new Date(`${to}T23:59:59.999`) : undefined;
+  // Date-only inputs (<input type="date">) interpreted as midnight in
+  // *this admin's* configured timezone, not the server's local time
+  // (05-nextjs-conventions.md "Timezone handling") — widen "to" to the
+  // end of that day so the filter is inclusive of the whole selected
+  // range.
+  const timeZone = session.user.settings.timezone;
+  const fromDate = from ? zonedTimeToUtc(from, timeZone) : undefined;
+  const toDate = to
+    ? zonedTimeToUtc(to, timeZone, {
+        hour: 23,
+        minute: 59,
+        second: 59,
+        millisecond: 999,
+      })
+    : undefined;
   const entityTypeFilter =
     entityType && (ENTITY_TYPES as readonly string[]).includes(entityType)
       ? entityType
@@ -165,10 +177,10 @@ export default async function MovementLogPage({ params, searchParams }: Props) {
                     className="border-b border-zinc-100 dark:border-zinc-900"
                   >
                     <td className="p-2 whitespace-nowrap">
-                      {new Intl.DateTimeFormat(locale, {
+                      {formatInTimezone(log.createdAt, timeZone, locale, {
                         dateStyle: "short",
                         timeStyle: "short",
-                      }).format(log.createdAt)}
+                      })}
                     </td>
                     <td className="p-2">{log.user.name}</td>
                     <td className="p-2">{tAction(log.action)}</td>

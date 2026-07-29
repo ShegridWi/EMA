@@ -3,6 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { getWeekRange, getReportData, generateReportPdf } from "@/lib/reports";
 import { sendEmail } from "@/lib/email";
+import { DEFAULT_TIMEZONE } from "@/lib/user-settings";
+import { formatInTimezone } from "@/lib/timezone";
 
 // Hit by an external scheduler, never by a signed-in user — there is no
 // `auth()`/session check here on purpose. `CRON_SECRET` (.env) is the
@@ -30,9 +32,14 @@ export async function GET(request: NextRequest) {
   }
 
   const locale = request.nextUrl.searchParams.get("locale") ?? "es";
+  // This email broadcasts to every active admin (below), who could each
+  // have a different configured timezone — there's no single "viewer"
+  // to personalize for, so it uses the business default rather than
+  // sending N differently-formatted emails.
+  const timeZone = DEFAULT_TIMEZONE;
   const range = getWeekRange();
   const data = await getReportData(range);
-  const pdfBuffer = await generateReportPdf(data, locale);
+  const pdfBuffer = await generateReportPdf(data, locale, timeZone);
 
   // Resolved assumption #7 (04-scope-mvp.md): every active admin, queried
   // dynamically — not a fixed mailbox — so it stays correct as admins
@@ -47,9 +54,8 @@ export async function GET(request: NextRequest) {
   }
 
   const t = await getTranslations({ locale, namespace: "Reports" });
-  const dateFmt = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
-  const from = dateFmt.format(range.from);
-  const to = dateFmt.format(range.to);
+  const from = formatInTimezone(range.from, timeZone, locale, { dateStyle: "medium" });
+  const to = formatInTimezone(range.to, timeZone, locale, { dateStyle: "medium" });
 
   await sendEmail({
     to: admins.map((admin) => admin.email),

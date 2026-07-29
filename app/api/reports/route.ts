@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getReportData, generateReportPdf } from "@/lib/reports";
+import { zonedTimeToUtc } from "@/lib/timezone";
 
 // Manual report download — admin-only, direct PDF response (no email
 // involved, unlike the weekly cron job). A plain GET so the reports page
@@ -24,14 +25,23 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const from = new Date(`${fromParam}T00:00:00`);
-  const to = new Date(`${toParam}T23:59:59.999`);
+  // Date-only inputs interpreted as midnight in *this admin's*
+  // configured timezone, not the server's local time
+  // (05-nextjs-conventions.md "Timezone handling").
+  const timeZone = session.user.settings.timezone;
+  const from = zonedTimeToUtc(fromParam, timeZone);
+  const to = zonedTimeToUtc(toParam, timeZone, {
+    hour: 23,
+    minute: 59,
+    second: 59,
+    millisecond: 999,
+  });
   if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
 
   const data = await getReportData({ from, to });
-  const pdfBuffer = await generateReportPdf(data, locale);
+  const pdfBuffer = await generateReportPdf(data, locale, timeZone);
 
   return new NextResponse(new Uint8Array(pdfBuffer), {
     headers: {

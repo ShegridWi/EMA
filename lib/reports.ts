@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import { getTranslations } from "next-intl/server";
 import { roundCurrency } from "@/lib/inventory";
 import { renderReportPdf } from "@/components/reports/report-document";
+import { DEFAULT_TIMEZONE } from "@/lib/user-settings";
+import { zonedTimeToUtc, getZonedDateOnly } from "@/lib/timezone";
 import type { Sale, Material, Product } from "@/app/generated/prisma/client";
 
 // Read-only reporting layer, shared by the manual report
@@ -12,32 +14,52 @@ import type { Sale, Material, Product } from "@/app/generated/prisma/client";
 export type ReportRange = { from: Date; to: Date };
 
 // The automatic weekly report runs every Saturday and covers that same
-// business week — Monday 00:00 through Saturday 23:59:59.999. A
-// reference date that falls on a Sunday is treated as still belonging to
-// the *previous* week (there's no real-world case where the cron fires
-// on a Sunday, but the function stays sane for any input).
-export function getWeekRange(reference: Date = new Date()): ReportRange {
-  const day = reference.getDay(); // 0 = Sunday .. 6 = Saturday
-  const diffToMonday = day === 0 ? -6 : 1 - day;
+// business week — Monday 00:00 through Saturday 23:59:59.999, *in the
+// business's own timezone* (05-nextjs-conventions.md "Timezone
+// handling") — not the server's. A reference instant that falls on a
+// Sunday in that timezone is treated as still belonging to the
+// *previous* week (there's no real-world case where the cron fires on
+// a Sunday, but the function stays sane for any input).
+//
+// `reference.getDay()`/`getDate()` etc. would read the *server's* local
+// calendar date, which silently drifts from Bolivia's once this runs on
+// a server clocked to a different timezone (e.g. plain UTC, common on
+// hosting platforms) — near a day boundary that miscomputes which week
+// "today" belongs to. Instead, the calendar date is derived from
+// `timeZone` explicitly via getZonedDateOnly, and Monday/Saturday are
+// computed as pure calendar arithmetic (safe regardless of timezone —
+// no wall-clock time is involved yet) before converting each endpoint
+// back to a UTC instant with zonedTimeToUtc.
+export function getWeekRange(
+  reference: Date = new Date(),
+  timeZone: string = DEFAULT_TIMEZONE,
+): ReportRange {
+  const [year, month, day] = getZonedDateOnly(reference, timeZone)
+    .split("-")
+    .map(Number);
 
-  const from = new Date(
-    reference.getFullYear(),
-    reference.getMonth(),
-    reference.getDate() + diffToMonday,
-    0,
-    0,
-    0,
-    0,
-  );
-  const to = new Date(
-    from.getFullYear(),
-    from.getMonth(),
-    from.getDate() + 5,
-    23,
-    59,
-    59,
-    999,
-  );
+  // Pure calendar math (Date.UTC here is just a day-arithmetic helper,
+  // not a timezone conversion — nothing about `year`/`month`/`day` came
+  // from a wall-clock-in-a-zone interpretation at this point).
+  const dayOfWeek = new Date(Date.UTC(year, month - 1, day)).getUTCDay(); // 0 = Sunday .. 6 = Saturday
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+  const mondayDateOnly = new Date(Date.UTC(year, month - 1, day + diffToMonday))
+    .toISOString()
+    .slice(0, 10);
+  const saturdayDateOnly = new Date(
+    Date.UTC(year, month - 1, day + diffToMonday + 5),
+  )
+    .toISOString()
+    .slice(0, 10);
+
+  const from = zonedTimeToUtc(mondayDateOnly, timeZone);
+  const to = zonedTimeToUtc(saturdayDateOnly, timeZone, {
+    hour: 23,
+    minute: 59,
+    second: 59,
+    millisecond: 999,
+  });
 
   return { from, to };
 }
@@ -115,10 +137,13 @@ export async function getReportData(range: ReportRange): Promise<ReportData> {
 
 // Resolves every translation namespace the PDF needs and hands them to
 // the (JSX) render function — kept here rather than duplicated in both
-// route handlers.
+// route handlers. `timeZone` is whoever requested the report (the admin
+// generating the manual one) — see DEFAULT_TIMEZONE's use in the cron
+// route for the automated weekly email, which has no single "viewer".
 export async function generateReportPdf(
   data: ReportData,
   locale: string,
+  timeZone: string,
 ): Promise<Buffer> {
   const [t, tSaleType, tCity, tUnit, tSize, tProducts] = await Promise.all([
     getTranslations({ locale, namespace: "Reports" }),
@@ -132,6 +157,7 @@ export async function generateReportPdf(
   return renderReportPdf({
     data,
     locale,
+    timeZone,
     t,
     tSaleType,
     tCity,
