@@ -13,7 +13,15 @@
     "search": "Buscar",
     "errorForbidden": "No tienes permiso para realizar esta acción.",
     "errorValidation": "Revisa los datos del formulario.",
-    "errorGeneric": "Ocurrió un error. Intenta de nuevo."
+    "errorGeneric": "Ocurrió un error. Intenta de nuevo.",
+    "actionCreated": "Creado correctamente.",
+    "actionUpdated": "Actualizado correctamente.",
+    "actionDeleted": "Eliminado correctamente.",
+    "actionDeactivated": "Desactivado correctamente.",
+    "actionReactivated": "Reactivado correctamente."
+  },
+  "Toast": {
+    "dismiss": "Cerrar"
   },
   "Login": {
     "title": "Iniciar sesión",
@@ -187,7 +195,10 @@
     "saleTypeAll": "Todos los tipos",
     "sellerAll": "Todos los vendedores",
     "dateFrom": "Desde",
-    "dateTo": "Hasta"
+    "dateTo": "Hasta",
+    "createSuccess": "Venta registrada correctamente.",
+    "returnSuccess": "Venta marcada como devolución.",
+    "voidSuccess": "Venta anulada correctamente."
   },
   "Users": {
     "title": "Usuarios",
@@ -308,7 +319,8 @@
     "theme": "Tema",
     "language": "Idioma",
     "languageEs": "Español",
-    "languageEn": "English"
+    "languageEn": "English",
+    "saveSuccess": "Ajustes guardados correctamente."
   },
   "StockMovementReason": {
     "CREATED": "Creación",

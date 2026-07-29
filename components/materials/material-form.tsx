@@ -7,6 +7,7 @@ import {
   createMaterialAction,
   updateMaterialAction,
 } from "@/lib/actions/materials";
+import { useToast } from "@/components/ui/toast-provider";
 import { Unit, City } from "@/app/generated/prisma/enums";
 import type { SerializedMaterial } from "@/lib/inventory";
 
@@ -25,6 +26,7 @@ export function MaterialForm({
   const tUnit = useTranslations("Unit");
   const tCity = useTranslations("City");
   const router = useRouter();
+  const { showToast } = useToast();
   const isEdit = Boolean(material);
 
   async function action(
@@ -51,12 +53,30 @@ export function MaterialForm({
     null,
   );
 
+  // `isEdit`/`tCommon` deliberately excluded below: `tCommon` isn't a
+  // referentially stable function across renders (next-intl), so
+  // depending on it would re-fire this effect (re-showing the toast,
+  // re-navigating) on unrelated re-renders instead of only when `state`
+  // actually changes. `isEdit` is derived from a prop that doesn't
+  // change within this component's lifetime.
   useEffect(() => {
     if (state?.success) {
+      showToast(
+        "success",
+        isEdit ? tCommon("actionUpdated") : tCommon("actionCreated"),
+      );
       router.push("/inventory/materials");
       router.refresh();
+    } else if (state?.success === false) {
+      showToast(
+        "error",
+        state.error === "Forbidden"
+          ? tCommon("errorForbidden")
+          : tCommon("errorValidation"),
+      );
     }
-  }, [state, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, router, showToast]);
 
   return (
     <form action={formAction} className="flex max-w-md flex-col gap-4">

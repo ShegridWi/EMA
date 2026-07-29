@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { returnSaleAction, voidSaleAction } from "@/lib/actions/sales";
 import { PromptModal } from "@/components/ui/prompt-modal";
+import { useToast } from "@/components/ui/toast-provider";
 
 type PendingAction = "return" | "void" | null;
 
@@ -14,13 +15,15 @@ type PendingAction = "return" | "void" | null;
 // + the optional reason are collected in one PromptModal (components/ui)
 // instead of window.confirm()/window.prompt() — Cancel in the modal
 // aborts the whole action (unlike the old window.prompt() step, where
-// Cancel just meant "no reason").
+// Cancel just meant "no reason"). Outcome feedback is a toast
+// (components/ui/toast-provider) — replaces the old inline error text,
+// since it also covers the success case this component didn't show before.
 export function SaleActions({ saleId }: { saleId: string }) {
   const t = useTranslations("Sales");
   const tCommon = useTranslations("Common");
   const router = useRouter();
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   function handleConfirm(reason: string) {
@@ -28,7 +31,6 @@ export function SaleActions({ saleId }: { saleId: string }) {
     setPendingAction(null);
     if (!action) return;
 
-    setError(null);
     startTransition(async () => {
       const trimmedReason = reason.trim() || undefined;
       const result =
@@ -37,38 +39,40 @@ export function SaleActions({ saleId }: { saleId: string }) {
           : await voidSaleAction({ id: saleId, reason: trimmedReason });
 
       if (!result.success) {
-        setError(result.error === "not_found" ? "not_found" : "generic");
+        showToast(
+          result.error === "not_found" ? "warning" : "error",
+          result.error === "not_found"
+            ? t("errorNotFound")
+            : tCommon("errorGeneric"),
+        );
         return;
       }
+      showToast(
+        "success",
+        action === "return" ? t("returnSuccess") : t("voidSuccess"),
+      );
       router.refresh();
     });
   }
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={() => setPendingAction("return")}
-          disabled={isPending}
-          className="text-sm underline disabled:opacity-50"
-        >
-          {t("markAsReturn")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setPendingAction("void")}
-          disabled={isPending}
-          className="text-sm text-red-600 underline disabled:opacity-50 dark:text-red-400"
-        >
-          {t("voidSale")}
-        </button>
-      </div>
-      {error && (
-        <p role="alert" className="text-xs text-red-600 dark:text-red-400">
-          {error === "not_found" ? t("errorNotFound") : tCommon("errorGeneric")}
-        </p>
-      )}
+    <div className="flex gap-3">
+      <button
+        type="button"
+        onClick={() => setPendingAction("return")}
+        disabled={isPending}
+        className="text-sm underline disabled:opacity-50"
+      >
+        {t("markAsReturn")}
+      </button>
+      <button
+        type="button"
+        onClick={() => setPendingAction("void")}
+        disabled={isPending}
+        className="text-sm text-red-600 underline disabled:opacity-50 dark:text-red-400"
+      >
+        {t("voidSale")}
+      </button>
 
       <PromptModal
         open={pendingAction !== null}

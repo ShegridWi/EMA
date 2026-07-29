@@ -4,16 +4,24 @@ import { useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { deactivateMaterialAction } from "@/lib/actions/materials";
+import { useToast } from "@/components/ui/toast-provider";
 
 export function DeactivateMaterialButton({ id }: { id: string }) {
   const t = useTranslations("Materials");
+  const tCommon = useTranslations("Common");
   const router = useRouter();
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   function handleDeactivate() {
     if (!window.confirm(t("confirmDeactivate"))) return;
     startTransition(async () => {
-      await deactivateMaterialAction({ id });
+      const result = await deactivateMaterialAction({ id });
+      if (!result.success) {
+        showToast("error", tCommon("errorGeneric"));
+        return;
+      }
+      showToast("success", tCommon("actionDeactivated"));
       router.refresh();
     });
   }

@@ -7,6 +7,7 @@ import {
   createUnitProductAction,
   updateProductAction,
 } from "@/lib/actions/products";
+import { useToast } from "@/components/ui/toast-provider";
 import { Size, City } from "@/app/generated/prisma/enums";
 import type { SerializedProduct } from "@/lib/inventory";
 
@@ -24,6 +25,7 @@ export function ProductForm({ product }: { product?: SerializedProduct }) {
   const tSize = useTranslations("Size");
   const tCity = useTranslations("City");
   const router = useRouter();
+  const { showToast } = useToast();
   const isEdit = Boolean(product);
 
   async function action(
@@ -49,12 +51,26 @@ export function ProductForm({ product }: { product?: SerializedProduct }) {
     null,
   );
 
+  // `isEdit`/`tCommon` deliberately excluded below — see the identical
+  // note in components/materials/material-form.tsx.
   useEffect(() => {
     if (state?.success) {
+      showToast(
+        "success",
+        isEdit ? tCommon("actionUpdated") : tCommon("actionCreated"),
+      );
       router.push("/inventory/products");
       router.refresh();
+    } else if (state?.success === false) {
+      showToast(
+        "error",
+        state.error === "Forbidden"
+          ? tCommon("errorForbidden")
+          : tCommon("errorValidation"),
+      );
     }
-  }, [state, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, router, showToast]);
 
   return (
     <form action={formAction} className="flex max-w-md flex-col gap-4">

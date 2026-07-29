@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useTheme } from "next-themes";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { updateUserSettingsAction } from "@/lib/actions/user-settings";
+import { useToast } from "@/components/ui/toast-provider";
 import { Theme, Locale } from "@/app/generated/prisma/enums";
 import { LOCALE_TO_ROUTE } from "@/lib/locale";
 import type { UserSettings } from "@/app/generated/prisma/client";
@@ -22,6 +23,7 @@ export function SettingsForm({ settings }: { settings: UserSettings }) {
   const pathname = usePathname();
   const router = useRouter();
   const currentLocale = useLocale();
+  const { showToast } = useToast();
 
   const timeZones = useMemo(() => Intl.supportedValuesOf("timeZone"), []);
 
@@ -41,9 +43,22 @@ export function SettingsForm({ settings }: { settings: UserSettings }) {
     null,
   );
 
+  // `t`/`tCommon` deliberately excluded below — see the identical note
+  // in components/materials/material-form.tsx.
   useEffect(() => {
+    if (state?.success === false) {
+      showToast(
+        "error",
+        state.error === "Forbidden"
+          ? tCommon("errorForbidden")
+          : tCommon("errorValidation"),
+      );
+      return;
+    }
     if (!state?.success) return;
     const saved = state.data as UserSettings;
+
+    showToast("success", t("saveSuccess"));
 
     // Instant feedback for the browser that just submitted the form —
     // next-themes' own toggle keeps working exactly as before for any
@@ -56,7 +71,8 @@ export function SettingsForm({ settings }: { settings: UserSettings }) {
     if (newRoute !== currentLocale) {
       router.replace(pathname, { locale: newRoute });
     }
-  }, [state, setTheme, router, pathname, currentLocale]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, setTheme, router, pathname, currentLocale, showToast]);
 
   return (
     <form action={formAction} className="flex max-w-md flex-col gap-4">

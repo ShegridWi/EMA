@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { reactivateUserAction } from "@/lib/actions/users";
 import { PromptModal } from "@/components/ui/prompt-modal";
+import { useToast } from "@/components/ui/toast-provider";
 
 // Uses PromptModal (components/ui) instead of window.confirm() so the
 // admin gets an explicit confirm step before restoring access, same as
@@ -14,13 +15,22 @@ export function ReactivateUserButton({ id }: { id: string }) {
   const t = useTranslations("Users");
   const tCommon = useTranslations("Common");
   const router = useRouter();
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
 
   function handleConfirm(reason: string) {
     setOpen(false);
     startTransition(async () => {
-      await reactivateUserAction({ id, reason: reason.trim() || undefined });
+      const result = await reactivateUserAction({
+        id,
+        reason: reason.trim() || undefined,
+      });
+      if (!result.success) {
+        showToast("error", tCommon("errorGeneric"));
+        return;
+      }
+      showToast("success", tCommon("actionReactivated"));
       router.refresh();
     });
   }

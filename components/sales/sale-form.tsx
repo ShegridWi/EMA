@@ -4,6 +4,7 @@ import { useActionState, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { createSaleAction } from "@/lib/actions/sales";
+import { useToast } from "@/components/ui/toast-provider";
 import { City, SaleType, PaymentMethod } from "@/app/generated/prisma/enums";
 import type { SerializedProduct } from "@/lib/inventory";
 
@@ -19,6 +20,7 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
   const tSaleType = useTranslations("SaleType");
   const tPaymentMethod = useTranslations("PaymentMethod");
   const router = useRouter();
+  const { showToast } = useToast();
 
   const [productId, setProductId] = useState(products[0]?.id ?? "");
   const [productSearch, setProductSearch] = useState("");
@@ -74,12 +76,24 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
     null,
   );
 
+  // `t`/`tCommon` deliberately excluded below — see the identical note
+  // in components/materials/material-form.tsx.
   useEffect(() => {
     if (state?.success) {
+      showToast("success", t("createSuccess"));
       router.push("/sales");
       router.refresh();
+    } else if (state?.success === false) {
+      if (state.error === "Forbidden") {
+        showToast("error", tCommon("errorForbidden"));
+      } else if (state.error === "insufficient_stock") {
+        showToast("warning", t("errorInsufficientStock"));
+      } else {
+        showToast("error", tCommon("errorValidation"));
+      }
     }
-  }, [state, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, router, showToast]);
 
   if (products.length === 0) {
     return (
