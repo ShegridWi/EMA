@@ -130,3 +130,41 @@ timestamp. Minimum actions to log:
   - Inventory (stock status).
 - **Automatic weekly report**: every Saturday, a PDF summarizing sales and
   inventory is generated and emailed to admins.
+
+## 8. User preferences (phase 9)
+
+Every user (any role) manages their own timezone, theme, and language
+via `UserSettings` — never an admin editing someone else's:
+
+- **Timezone**: defaults to `America/La_Paz` (Bolivia, UTC-4, no DST).
+  Every date is **stored in UTC**; it's converted to the *viewing* or
+  *acting* user's configured timezone only at the display/input
+  boundary (see `05-nextjs-conventions.md` "Timezone handling"). Almost
+  everyone will keep the default since the business only operates in
+  Bolivia, but the setting isn't hardcoded — a dropdown lets it change.
+- **Theme**: applied as the session's initial light/dark theme on
+  login. A manual toggle during the session still works as before (the
+  `next-themes` cookie), it just no longer starts from a fixed browser
+  default.
+- **Language**: applied right after login — redirects to the matching
+  locale (`/es` or `/en`) if the URL doesn't already match.
+
+## 9. Product deactivation (phase 9)
+
+Separate from the existing soft delete (`deletedAt`, permanent-ish
+removal from the catalog): `Product.active` is a **reversible** toggle
+for "temporarily out of production / discontinued but might come back"
+— admin-only, same role as add/edit/delete. Deactivating a `SET`
+container row does **not** cascade to its pieces (same independent-row
+rule as delete, 02-data-model.md).
+
+## 10. Product stock history (phase 9)
+
+Every change to `Product.quantity` — creation with starting stock, a
+manual edit that changes the quantity, a sale, or a sale being returned/
+voided — writes one `ProductStockMovement` row per affected product/
+piece (02-data-model.md), recording the quantity before/after, the
+delta, why, the related sale if any, and who caused it. Viewable by
+both roles from the product's own row in the Finished product listing
+(same visibility as viewing the product itself) — it's a read-only
+history, no actions.
