@@ -22,6 +22,10 @@ export type PromptModalProps = {
  * return/void reason, but written to be reused anywhere else the app
  * needs the same "confirm + optional free text" shape.
  *
+ * Omit `inputLabel` for a plain yes/no confirm (e.g. deactivate buttons)
+ * — the textarea only renders when there's a label for it, so a caller
+ * that doesn't need free text doesn't get an unexplained empty box.
+ *
  * Purely presentational: all copy (title/message/labels) is passed in
  * by the caller, so this component has no next-intl dependency, per the
  * components/ui/ convention in 05-nextjs-conventions.md.
@@ -79,24 +83,24 @@ export function PromptModal({
           )}
         </div>
 
-        <div className="flex flex-col gap-1">
-          {inputLabel && (
+        {inputLabel && (
+          <div className="flex flex-col gap-1">
             <label
               htmlFor="prompt-modal-input"
               className="text-sm font-medium"
             >
               {inputLabel}
             </label>
-          )}
-          <textarea
-            id="prompt-modal-input"
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            placeholder={placeholder}
-            rows={3}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          />
-        </div>
+            <textarea
+              id="prompt-modal-input"
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+              placeholder={placeholder}
+              rows={3}
+              className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+            />
+          </div>
+        )}
 
         <div className="flex justify-end gap-3">
           <button
