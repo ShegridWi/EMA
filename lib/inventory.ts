@@ -362,7 +362,7 @@ export function serializeSale(sale: Sale): SerializedSale {
 // Rounds to 2 decimals (currency) — plain JS float math otherwise leaves
 // drift (e.g. `99.99 - 50` is `49.989999999999995`), which would then get
 // persisted as-is into the Decimal columns.
-function roundCurrency(amount: number): number {
+export function roundCurrency(amount: number): number {
   return Math.round((amount + Number.EPSILON) * 100) / 100;
 }
 

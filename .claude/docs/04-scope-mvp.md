@@ -38,8 +38,6 @@ validating:
 3. **Seller and city**: is a seller fixed to one city (La Paz or Santa
    Cruz), or can they sell/view inventory for both? Affects the `User.city`
    model and default filters.
-7. **Weekly report email**: which address(es) does it go to? All
-   registered admins, or one fixed business mailbox?
 
 Resolved:
 
@@ -76,6 +74,10 @@ Resolved:
   business ever needs to record a sale/price in USD; that would need a
   `currency` column added to `Material`/`Product`/`Sale` plus a form
   field, not just a display change.
+- ~~**Weekly report email**~~ — decided for `feature/reports`: sent to
+  **every active admin** (`role = ADMIN`, `active = true`), queried
+  dynamically at send time — not a fixed mailbox. Stays correct on its
+  own as admins are added/deactivated, no env var to maintain.
 
 None of these block starting the project (they were modeled with
 reasonable defaults), but they should be resolved before building the
