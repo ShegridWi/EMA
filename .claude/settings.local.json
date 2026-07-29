@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p .claude/docs)",
+      "Bash(mv README.md .claude/README.md)",
+      "Bash(mv 01-business-rules.md 02-data-model.md 03-roles-permissions.md 04-scope-mvp.md .claude/docs/)",
+      "Bash(node scripts/check-env.mjs)",
+      "Bash(echo \"exit code: $?\")"
+    ]
+  }
+}

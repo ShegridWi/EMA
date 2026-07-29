@@ -1,0 +1,17 @@
+name: ema
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ema
+      POSTGRES_PASSWORD: ema_dev_password
+      POSTGRES_DB: ema
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
