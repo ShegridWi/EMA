@@ -9,6 +9,7 @@ import { formatCurrency } from "@/lib/currency";
 import { zonedTimeToUtc } from "@/lib/timezone";
 import { Size } from "@/app/generated/prisma/enums";
 import type { Product } from "@/app/generated/prisma/client";
+import { History, Pencil } from "lucide-react";
 
 type Props = {
   searchParams: Promise<{
@@ -226,16 +227,18 @@ export default async function ProductsPage({ searchParams }: Props) {
                     <div className="flex gap-3">
                       <Link
                         href={`/inventory/products/${set.id}/history`}
-                        className="text-sm underline"
+                        className="inline-flex items-center gap-1 text-sm underline"
                       >
+                        <History className="size-4" />
                         {tHistory("linkLabel")}
                       </Link>
                       {isAdmin && (
                         <>
                           <Link
                             href={`/inventory/products/${set.id}/edit`}
-                            className="text-sm underline"
+                            className="inline-flex items-center gap-1 text-sm underline"
                           >
+                            <Pencil className="size-4" />
                             {tCommon("edit")}
                           </Link>
                           {set.active ? (
@@ -275,16 +278,18 @@ export default async function ProductsPage({ searchParams }: Props) {
                                 <div className="flex gap-3">
                                   <Link
                                     href={`/inventory/products/${piece.id}/history`}
-                                    className="underline"
+                                    className="inline-flex items-center gap-1 underline"
                                   >
+                                    <History className="size-4" />
                                     {tHistory("linkLabel")}
                                   </Link>
                                   {isAdmin && (
                                     <>
                                   <Link
                                     href={`/inventory/products/${piece.id}/edit`}
-                                    className="underline"
+                                    className="inline-flex items-center gap-1 underline"
                                   >
+                                    <Pencil className="size-4" />
                                     {tCommon("edit")}
                                   </Link>
                                   {piece.active ? (
@@ -343,16 +348,18 @@ export default async function ProductsPage({ searchParams }: Props) {
                           <div className="flex gap-3">
                             <Link
                               href={`/inventory/products/${product.id}/history`}
-                              className="underline"
+                              className="inline-flex items-center gap-1 underline"
                             >
+                              <History className="size-4" />
                               {tHistory("linkLabel")}
                             </Link>
                             {isAdmin && (
                               <>
                                 <Link
                                   href={`/inventory/products/${product.id}/edit`}
-                                  className="underline"
+                                  className="inline-flex items-center gap-1 underline"
                                 >
+                                  <Pencil className="size-4" />
                                   {tCommon("edit")}
                                 </Link>
                                 {product.active ? (

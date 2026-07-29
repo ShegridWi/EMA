@@ -10,6 +10,7 @@ import {
 import { useToast } from "@/components/ui/toast-provider";
 import { Size, City } from "@/app/generated/prisma/enums";
 import type { SerializedProduct } from "@/lib/inventory";
+import { Loader2 } from "lucide-react";
 
 type ActionResult =
   | { success: true; data: unknown }
@@ -182,8 +183,9 @@ export function ProductForm({ product }: { product?: SerializedProduct }) {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-zinc-900 px-4 py-2 font-medium text-zinc-50 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-zinc-50 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
         >
+          {pending && <Loader2 className="size-4 animate-spin" />}
           {isEdit ? tCommon("save") : tCommon("create")}
         </button>
         <Link

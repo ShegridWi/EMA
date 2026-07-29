@@ -1,26 +1,77 @@
 @import "tailwindcss";
 
+/*
+ * Single centralized source for every color in the app (CLAUDE.md
+ * section 7). Components must consume these as bg-background,
+ * text-foreground, bg-primary, etc. — never a raw hex or a Tailwind
+ * palette class. See the theming-user-settings and tailwind-conventions
+ * skills (.claude/skills/) for the full rationale and contrast notes.
+ *
+ * Selector is the plain `.dark` class (not @media prefers-color-scheme)
+ * because next-themes applies the resolved theme as a class on <html>
+ * via attribute="class" (app/[locale]/layout.tsx), seeded from the
+ * signed-in user's UserSettings.theme — see theming-user-settings.
+ */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #523f38;
+  --muted: #f4f4f5;
+  --muted-foreground: #4c5454;
+  --border: #d4d4d8;
+  --primary: #ff715b;
+  --primary-foreground: #ffffff;
+  --secondary: #1ea896;
+  --secondary-foreground: #ffffff;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --danger: #dc2626;
+  --danger-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --ring: var(--primary);
+}
+
+.dark {
+  --background: #031926;
+  --foreground: #f4e9cd;
+  --muted: #18181b;
+  --muted-foreground: #9dbebb;
+  --border: #3f3f46;
+  --primary: #468189;
+  --primary-foreground: #ffffff;
+  --secondary: #77aca2;
+  --secondary-foreground: #031926;
+  --success: #22c55e;
+  --success-foreground: #052e12;
+  --danger: #f87171;
+  --danger-foreground: #450a0a;
+  --warning: #f59e0b;
+  --warning-foreground: #451a03;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
