@@ -75,6 +75,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  // ProductStockMovement rows reference both Sale and Product — must be
+  // cleared first or the FK constraint blocks the deletes below.
+  await prisma.productStockMovement.deleteMany({ where: { userId: testUserId } });
   await prisma.sale.deleteMany({ where: { sellerId: testUserId } });
   await prisma.movementLog.deleteMany({ where: { userId: testUserId } });
   await prisma.product.deleteMany({
@@ -134,6 +137,7 @@ describe("createSale — UNIT stock deduction", () => {
   });
 
   afterEach(async () => {
+    await prisma.productStockMovement.deleteMany({ where: { productId } });
     await prisma.sale.deleteMany({ where: { productId } });
     await prisma.product.deleteMany({ where: { id: productId } });
   });
@@ -300,6 +304,9 @@ describe("createSale — SET stock deduction", () => {
   });
 
   afterEach(async () => {
+    await prisma.productStockMovement.deleteMany({
+      where: { productId: { in: [setId, topId, bottomId, capId] } },
+    });
     await prisma.sale.deleteMany({ where: { productId: setId } });
     await prisma.product.deleteMany({
       where: { id: { in: [setId, topId, bottomId, capId] } },
@@ -401,6 +408,7 @@ describe("returnSale / voidSale — UNIT", () => {
   });
 
   afterEach(async () => {
+    await prisma.productStockMovement.deleteMany({ where: { productId } });
     await prisma.sale.deleteMany({ where: { productId } });
     await prisma.product.deleteMany({ where: { id: productId } });
   });
@@ -548,6 +556,9 @@ describe("returnSale / voidSale — SET", () => {
   });
 
   afterEach(async () => {
+    await prisma.productStockMovement.deleteMany({
+      where: { productId: { in: [setId, topId, bottomId] } },
+    });
     await prisma.sale.deleteMany({ where: { productId: setId } });
     await prisma.product.deleteMany({
       where: { id: { in: [setId, topId, bottomId] } },

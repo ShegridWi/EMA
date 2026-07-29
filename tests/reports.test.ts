@@ -125,6 +125,9 @@ describe("getReportData", () => {
   });
 
   afterAll(async () => {
+    // ProductStockMovement rows reference User via userId — must be
+    // cleared first or the FK constraint blocks the user delete below.
+    await prisma.productStockMovement.deleteMany({ where: { userId: testUserId } });
     await prisma.movementLog.deleteMany({ where: { userId: testUserId } });
     await prisma.user.delete({ where: { id: testUserId } });
     await prisma.$disconnect();
@@ -180,6 +183,7 @@ describe("getReportData", () => {
   });
 
   afterEach(async () => {
+    await prisma.productStockMovement.deleteMany({ where: { productId } });
     await prisma.sale.deleteMany({ where: { productId } });
     await prisma.product.deleteMany({ where: { id: productId } });
   });

@@ -5,8 +5,14 @@ import type {
   Size,
   PieceRole,
   MovementAction,
+  StockMovementReason,
 } from "@/app/generated/prisma/enums";
-import type { Material, Product, Sale } from "@/app/generated/prisma/client";
+import type {
+  Material,
+  Product,
+  Sale,
+  Prisma,
+} from "@/app/generated/prisma/client";
 import type {
   CreateMaterialInput,
   UpdateMaterialInput,
@@ -22,6 +28,34 @@ import type { CreateSaleInput } from "@/lib/validations/sale";
 // `prisma.product.*` / `prisma.sale.*` (CLAUDE.md section 7). Every
 // mutation wraps the write(s) and the MovementLog insert(s) in the same
 // `prisma.$transaction`, so they commit or roll back together.
+
+// Writes one ProductStockMovement row using an already-open transaction
+// client — same "never opens its own transaction" rule as
+// lib/audit.ts's writeAuditLog. Called by every function below that
+// changes Product.quantity (02-data-model.md "ProductStockMovement").
+async function writeStockMovement(
+  tx: Prisma.TransactionClient,
+  entry: {
+    productId: string;
+    quantityBefore: number;
+    quantityAfter: number;
+    reason: StockMovementReason;
+    userId: string;
+    saleId?: string;
+  },
+) {
+  await tx.productStockMovement.create({
+    data: {
+      productId: entry.productId,
+      quantityBefore: entry.quantityBefore,
+      quantityAfter: entry.quantityAfter,
+      delta: entry.quantityAfter - entry.quantityBefore,
+      reason: entry.reason,
+      userId: entry.userId,
+      saleId: entry.saleId,
+    },
+  });
+}
 
 export type SerializedMaterial = Omit<
   Material,
@@ -168,6 +202,7 @@ export type ProductFilters = {
   // Already-resolved UTC instants — see MaterialFilters above.
   createdFrom?: Date;
   createdTo?: Date;
+  active?: boolean;
 };
 
 // `size` matches at the row level, including SET containers and their
@@ -180,13 +215,14 @@ export type ProductFilters = {
 // (it reappears once the filter is cleared) — a narrow display quirk,
 // not a data problem, not worth changing filter semantics over.
 export function listProducts(filters: ProductFilters = {}) {
-  const { search, city, size, createdFrom, createdTo } = filters;
+  const { search, city, size, createdFrom, createdTo, active } = filters;
 
   return prisma.product.findMany({
     where: {
       deletedAt: null,
       ...(city ? { city } : {}),
       ...(size ? { size } : {}),
+      ...(active !== undefined ? { active } : {}),
       ...(createdFrom || createdTo
         ? {
             createdAt: {
@@ -228,6 +264,16 @@ export async function createUnitProduct(
       entityId: product.id,
       metadata: input,
     });
+
+    if (product.quantity > 0) {
+      await writeStockMovement(tx, {
+        productId: product.id,
+        quantityBefore: 0,
+        quantityAfter: product.quantity,
+        reason: "CREATED",
+        userId,
+      });
+    }
 
     return product;
   });
@@ -319,6 +365,19 @@ export async function createSetProduct(
         },
       });
 
+      // The SET container itself never carries real stock (always
+      // created with quantity: 0 above), so it never gets a
+      // ProductStockMovement row — only its pieces do.
+      if (piece.quantity > 0) {
+        await writeStockMovement(tx, {
+          productId: piece.id,
+          quantityBefore: 0,
+          quantityAfter: piece.quantity,
+          reason: "CREATED",
+          userId,
+        });
+      }
+
       pieces.push(piece);
     }
 
@@ -330,6 +389,11 @@ export async function updateProduct(input: UpdateProductInput, userId: string) {
   const { id, ...data } = input;
 
   return prisma.$transaction(async (tx) => {
+    // Read the current quantity *inside* the transaction, before the
+    // update, so the before/after pair in the ProductStockMovement row
+    // below can't race with a concurrent write.
+    const existing = await tx.product.findUniqueOrThrow({ where: { id } });
+
     const product = await tx.product.update({
       where: { id },
       data,
@@ -342,6 +406,16 @@ export async function updateProduct(input: UpdateProductInput, userId: string) {
       entityId: product.id,
       metadata: data,
     });
+
+    if (product.quantity !== existing.quantity) {
+      await writeStockMovement(tx, {
+        productId: product.id,
+        quantityBefore: existing.quantity,
+        quantityAfter: product.quantity,
+        reason: "MANUAL_ADJUSTMENT",
+        userId,
+      });
+    }
 
     return product;
   });
@@ -363,6 +437,55 @@ export async function deleteProduct(id: string, userId: string) {
       entityType: "Product",
       entityId: product.id,
       metadata: {},
+    });
+
+    return product;
+  });
+}
+
+// `active` (phase 9) is a separate, reversible concept from the
+// deletedAt soft delete above — e.g. discontinued/out of production but
+// might come back, versus a permanent removal from the catalog. Same
+// independent-row rule as delete: deactivating a SET's container row
+// does not cascade to its pieces.
+export async function deactivateProduct(id: string, userId: string) {
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.update({
+      where: { id },
+      data: { active: false },
+    });
+
+    await writeAuditLog(tx, {
+      userId,
+      action: "DEACTIVATE_PRODUCT",
+      entityType: "Product",
+      entityId: product.id,
+      metadata: {},
+    });
+
+    return product;
+  });
+}
+
+// `reason` is an optional free-text note on why the product is being
+// restored — same idea as reactivateUser's reason (lib/users.ts).
+export async function reactivateProduct(
+  id: string,
+  userId: string,
+  reason?: string,
+) {
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.update({
+      where: { id },
+      data: { active: true },
+    });
+
+    await writeAuditLog(tx, {
+      userId,
+      action: "REACTIVATE_PRODUCT",
+      entityType: "Product",
+      entityId: product.id,
+      metadata: reason ? { reason } : {},
     });
 
     return product;
@@ -458,6 +581,27 @@ export async function createSale(input: CreateSaleInput, sellerId: string) {
       throw new InsufficientStockError(input.productId);
     }
 
+    // Collected here and written as ProductStockMovement rows *after*
+    // the sale below is created — the sale doesn't exist yet at this
+    // point, and each row needs to link to it via saleId.
+    //
+    // Known limitation, pre-dating this ledger (same as the
+    // InsufficientStockError check above): `product.quantity` here is a
+    // plain read with no row lock, so it carries the same
+    // read-then-relative-decrement race as the stock check itself under
+    // genuinely concurrent sales of the *same* product. The DB's
+    // `{decrement: N}` keeps the actual `Product.quantity` arithmetically
+    // correct either way, but in that narrow race the recorded
+    // quantityBefore/quantityAfter pair could disagree with the true
+    // commit order. Not fixed here — would mean adding row-level locking
+    // across the whole sales path, out of scope for a stock-history
+    // feature on a low-traffic internal tool.
+    const stockChanges: {
+      productId: string;
+      quantityBefore: number;
+      quantityAfter: number;
+    }[] = [];
+
     if (product.kind === "UNIT") {
       if (product.quantity < input.quantity) {
         throw new InsufficientStockError(product.id);
@@ -465,6 +609,11 @@ export async function createSale(input: CreateSaleInput, sellerId: string) {
       await tx.product.update({
         where: { id: product.id },
         data: { quantity: { decrement: input.quantity } },
+      });
+      stockChanges.push({
+        productId: product.id,
+        quantityBefore: product.quantity,
+        quantityAfter: product.quantity - input.quantity,
       });
     } else {
       const pieces = await tx.product.findMany({
@@ -480,6 +629,11 @@ export async function createSale(input: CreateSaleInput, sellerId: string) {
         await tx.product.update({
           where: { id: piece.id },
           data: { quantity: { decrement: input.quantity } },
+        });
+        stockChanges.push({
+          productId: piece.id,
+          quantityBefore: piece.quantity,
+          quantityAfter: piece.quantity - input.quantity,
         });
       }
     }
@@ -530,6 +684,17 @@ export async function createSale(input: CreateSaleInput, sellerId: string) {
       },
     });
 
+    for (const change of stockChanges) {
+      await writeStockMovement(tx, {
+        productId: change.productId,
+        quantityBefore: change.quantityBefore,
+        quantityAfter: change.quantityAfter,
+        reason: "SALE",
+        userId: sellerId,
+        saleId: sale.id,
+      });
+    }
+
     return sale;
   });
 }
@@ -568,11 +733,24 @@ async function reverseSale(
       where: { id: sale.productId },
     });
 
+    // Collected here and written as ProductStockMovement rows after the
+    // audit log below, same reasoning as createSale's stockChanges.
+    const stockChanges: {
+      productId: string;
+      quantityBefore: number;
+      quantityAfter: number;
+    }[] = [];
+
     if (product) {
       if (product.kind === "UNIT") {
         await tx.product.update({
           where: { id: product.id },
           data: { quantity: { increment: sale.quantity } },
+        });
+        stockChanges.push({
+          productId: product.id,
+          quantityBefore: product.quantity,
+          quantityAfter: product.quantity + sale.quantity,
         });
       } else {
         const pieces = await tx.product.findMany({
@@ -582,6 +760,11 @@ async function reverseSale(
           await tx.product.update({
             where: { id: piece.id },
             data: { quantity: { increment: sale.quantity } },
+          });
+          stockChanges.push({
+            productId: piece.id,
+            quantityBefore: piece.quantity,
+            quantityAfter: piece.quantity + sale.quantity,
           });
         }
       }
@@ -603,6 +786,19 @@ async function reverseSale(
         ...(reason ? { reason } : {}),
       },
     });
+
+    const stockReason: StockMovementReason =
+      action === "RETURN_SALE" ? "RETURN" : "VOID";
+    for (const change of stockChanges) {
+      await writeStockMovement(tx, {
+        productId: change.productId,
+        quantityBefore: change.quantityBefore,
+        quantityAfter: change.quantityAfter,
+        reason: stockReason,
+        userId,
+        saleId: sale.id,
+      });
+    }
 
     return updatedSale;
   });
@@ -679,4 +875,25 @@ export async function listReversedSales(
   }
 
   return results;
+}
+
+// ---------------------------------------------------------------------
+// ProductStockMovement (phase 9 — per-product stock history)
+// ---------------------------------------------------------------------
+
+/**
+ * Every stock-affecting event for a single product — creation, manual
+ * edits, sales, and returns/voids (01-business-rules.md section 10).
+ * Read-only; every row here is written by the functions above, in the
+ * same transaction as the quantity change they record.
+ */
+export function listProductStockMovements(productId: string) {
+  return prisma.productStockMovement.findMany({
+    where: { productId },
+    include: {
+      user: { select: { name: true } },
+      sale: { select: { id: true, description: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 }

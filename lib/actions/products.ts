@@ -6,12 +6,16 @@ import {
   createUnitProductSchema,
   createSetProductSchema,
   updateProductSchema,
+  deactivateProductSchema,
+  reactivateProductSchema,
 } from "@/lib/validations/product";
 import {
   createUnitProduct,
   createSetProduct,
   updateProduct,
   deleteProduct,
+  deactivateProduct,
+  reactivateProduct,
   serializeProduct,
 } from "@/lib/inventory";
 
@@ -83,5 +87,39 @@ export async function deleteProductAction(input: unknown) {
   }
 
   const product = await deleteProduct(parsed.data.id, session.user.id);
+  return { success: true as const, data: serializeProduct(product) };
+}
+
+export async function deactivateProductAction(input: unknown) {
+  const session = await auth();
+  if (session?.user.role !== "ADMIN") {
+    return { success: false as const, error: "Forbidden" };
+  }
+
+  const parsed = deactivateProductSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false as const, error: parsed.error.flatten() };
+  }
+
+  const product = await deactivateProduct(parsed.data.id, session.user.id);
+  return { success: true as const, data: serializeProduct(product) };
+}
+
+export async function reactivateProductAction(input: unknown) {
+  const session = await auth();
+  if (session?.user.role !== "ADMIN") {
+    return { success: false as const, error: "Forbidden" };
+  }
+
+  const parsed = reactivateProductSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false as const, error: parsed.error.flatten() };
+  }
+
+  const product = await reactivateProduct(
+    parsed.data.id,
+    session.user.id,
+    parsed.data.reason,
+  );
   return { success: true as const, data: serializeProduct(product) };
 }
