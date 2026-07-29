@@ -208,6 +208,8 @@
     "CREATE_PRODUCT": "Creación de producto",
     "UPDATE_PRODUCT": "Edición de producto",
     "DELETE_PRODUCT": "Eliminación de producto",
+    "DEACTIVATE_PRODUCT": "Desactivación de producto",
+    "REACTIVATE_PRODUCT": "Reactivación de producto",
     "CREATE_SALE": "Registro de venta",
     "UPDATE_SALE": "Edición de venta",
     "DELETE_SALE": "Eliminación de venta",
@@ -216,7 +218,8 @@
     "CREATE_USER": "Creación de usuario",
     "UPDATE_USER": "Edición de usuario",
     "DELETE_USER": "Desactivación de usuario",
-    "REACTIVATE_USER": "Reactivación de usuario"
+    "REACTIVATE_USER": "Reactivación de usuario",
+    "UPDATE_SETTINGS": "Actualización de ajustes"
   },
   "EntityType": {
     "Material": "Material",

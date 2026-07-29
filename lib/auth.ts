@@ -54,12 +54,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.city = user.city;
         token.settings = user.settings;
+      } else if (token.id && !token.settings) {
+        // Self-heals a session whose JWT was issued before this feature
+        // existed (no re-login required) — without this, every reader of
+        // `session.user.settings` (this file's session() callback below,
+        // plus every page/route that reads session.user.settings.timezone)
+        // would crash on `undefined.theme`/`.timezone` for anyone who was
+        // already signed in when this shipped. Runs at most once per
+        // session: the resulting token.settings persists in the JWT
+        // cookie from here on, so this branch won't fire again until the
+        // next real sign-in.
+        const settings = await getOrCreateUserSettings(token.id as string);
+        token.settings = {
+          timezone: settings.timezone,
+          theme: settings.theme,
+          locale: settings.locale,
+        };
       }
       return token;
     },

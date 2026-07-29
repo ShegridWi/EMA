@@ -44,7 +44,10 @@ export default async function LocaleLayout({ children, params }: Props) {
   // components/ui/theme-toggle.tsx), this only changes the first-paint
   // default. No session (e.g. the login page) falls back to "system".
   const session = await auth();
-  const defaultTheme = session?.user.settings.theme.toLowerCase() ?? "system";
+  // The extra `?.` on `settings` guards a session whose JWT predates
+  // this feature (lib/auth.ts's jwt() callback self-heals those on the
+  // next request, but falls back to "system" here just in case).
+  const defaultTheme = session?.user.settings?.theme.toLowerCase() ?? "system";
 
   return (
     <html

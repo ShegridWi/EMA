@@ -208,6 +208,8 @@
     "CREATE_PRODUCT": "Product created",
     "UPDATE_PRODUCT": "Product updated",
     "DELETE_PRODUCT": "Product deleted",
+    "DEACTIVATE_PRODUCT": "Product deactivated",
+    "REACTIVATE_PRODUCT": "Product reactivated",
     "CREATE_SALE": "Sale registered",
     "UPDATE_SALE": "Sale updated",
     "DELETE_SALE": "Sale deleted",
@@ -216,7 +218,8 @@
     "CREATE_USER": "User created",
     "UPDATE_USER": "User updated",
     "DELETE_USER": "User deactivated",
-    "REACTIVATE_USER": "User reactivated"
+    "REACTIVATE_USER": "User reactivated",
+    "UPDATE_SETTINGS": "Settings updated"
   },
   "EntityType": {
     "Material": "Material",
