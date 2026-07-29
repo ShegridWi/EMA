@@ -39,10 +39,6 @@ validating:
    with a delivery date vs. `RESERVATION` with a partial payment) or the
    same concept under different names? Currently modeled as two separate
    enums but with overlapping fields (`amountPaid`, `balanceDue`).
-2. **Set as an entity**: does the business need to see "I have 5 complete
-   sets available" as a direct number, or is it enough to see each piece's
-   stock separately and calculate the minimum mentally? This changes
-   whether a calculated field or an aggregated view is needed.
 3. **Seller and city**: is a seller fixed to one city (La Paz or Santa
    Cruz), or can they sell/view inventory for both? Affects the `User.city`
    model and default filters.
@@ -66,6 +62,11 @@ Resolved:
   losing existing data (`materialType`/`color` values become seed rows).
 - ~~**Sizes**~~ — confirmed: fixed catalog, modeled as `enum Size { XS S M
   L XL XXL }` in `prisma/schema.prisma`.
+- ~~**Set as an entity**~~ — decided for `feature/products-crud`: show
+  each piece's stock separately; no computed "N complete sets available"
+  number for now. Revisit if the business asks for that aggregate later
+  (it would be a calculated field: min across the set's pieces, not a
+  stored value).
 
 None of these block starting the project (they were modeled with
 reasonable defaults), but they should be resolved before building the

@@ -54,6 +54,14 @@
     "UNITS": "Units",
     "ROLLS": "Rolls"
   },
+  "Size": {
+    "XS": "XS",
+    "S": "S",
+    "M": "M",
+    "L": "L",
+    "XL": "XL",
+    "XXL": "XXL"
+  },
   "Materials": {
     "title": "Materials",
     "addNew": "New material",
@@ -69,5 +77,33 @@
     "purchasePrice": "Purchase price",
     "colorOptional": "Color (optional)",
     "backToList": "Back to list"
+  },
+  "PieceRole": {
+    "TOP": "Top",
+    "BOTTOM": "Bottom",
+    "CAP": "Cap"
+  },
+  "Products": {
+    "title": "Finished product",
+    "addNewUnit": "New piece",
+    "addNewSet": "New set",
+    "newUnitTitle": "New individual piece",
+    "newSetTitle": "New set",
+    "editTitle": "Edit product",
+    "searchPlaceholder": "Search by description or color...",
+    "description": "Description",
+    "color": "Color",
+    "size": "Size",
+    "quantity": "Quantity",
+    "price": "Price",
+    "city": "City",
+    "kindSet": "Set",
+    "kindUnit": "Piece",
+    "setsSectionTitle": "Sets",
+    "standaloneSectionTitle": "Individual pieces",
+    "topQuantity": "Starting quantity — Top",
+    "bottomQuantity": "Starting quantity — Bottom",
+    "includeCap": "Includes a cap?",
+    "capQuantity": "Starting quantity — Cap"
   }
 }
