@@ -80,7 +80,14 @@
     "colorOptional": "Color (optional)",
     "backToList": "Back to list",
     "createdFrom": "Created from",
-    "createdTo": "Created to"
+    "createdTo": "Created to",
+    "tabActive": "Active",
+    "tabInactive": "Inactive",
+    "deactivate": "Deactivate",
+    "confirmDeactivate": "Are you sure you want to deactivate this material? It will no longer appear in the active listing.",
+    "reactivate": "Reactivate",
+    "confirmReactivate": "Confirm you want to reactivate this material?",
+    "reasonPrompt": "Reason (optional):"
   },
   "PieceRole": {
     "TOP": "Top",
@@ -205,6 +212,8 @@
     "CREATE_MATERIAL": "Material created",
     "UPDATE_MATERIAL": "Material updated",
     "DELETE_MATERIAL": "Material deleted",
+    "DEACTIVATE_MATERIAL": "Material deactivated",
+    "REACTIVATE_MATERIAL": "Material reactivated",
     "CREATE_PRODUCT": "Product created",
     "UPDATE_PRODUCT": "Product updated",
     "DELETE_PRODUCT": "Product deleted",

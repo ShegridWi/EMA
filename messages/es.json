@@ -80,7 +80,14 @@
     "colorOptional": "Color (opcional)",
     "backToList": "Volver al listado",
     "createdFrom": "Creado desde",
-    "createdTo": "Creado hasta"
+    "createdTo": "Creado hasta",
+    "tabActive": "Activos",
+    "tabInactive": "Inactivos",
+    "deactivate": "Desactivar",
+    "confirmDeactivate": "¿Seguro que quieres desactivar este material? Dejará de aparecer en el listado activo.",
+    "reactivate": "Reactivar",
+    "confirmReactivate": "¿Confirmas que quieres reactivar este material?",
+    "reasonPrompt": "Motivo (opcional):"
   },
   "PieceRole": {
     "TOP": "Top",
@@ -205,6 +212,8 @@
     "CREATE_MATERIAL": "Creación de material",
     "UPDATE_MATERIAL": "Edición de material",
     "DELETE_MATERIAL": "Eliminación de material",
+    "DEACTIVATE_MATERIAL": "Desactivación de material",
+    "REACTIVATE_MATERIAL": "Reactivación de material",
     "CREATE_PRODUCT": "Creación de producto",
     "UPDATE_PRODUCT": "Edición de producto",
     "DELETE_PRODUCT": "Eliminación de producto",
