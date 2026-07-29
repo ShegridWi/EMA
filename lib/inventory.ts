@@ -579,3 +579,68 @@ export function returnSale(id: string, userId: string, reason?: string) {
 export function voidSale(id: string, userId: string, reason?: string) {
   return reverseSale(id, userId, "VOID_SALE", reason);
 }
+
+export type ReversedSaleInfo = {
+  sale: Sale & { seller: { name: string } };
+  action: Extract<MovementAction, "RETURN_SALE" | "VOID_SALE">;
+  reason: string | null;
+  performedBy: string;
+  reversedAt: Date;
+};
+
+/**
+ * Sales tab's "Anulaciones" view: every returned/voided sale, alongside
+ * who reversed it, when, and the optional reason — all of which live on
+ * the RETURN_SALE/VOID_SALE MovementLog entry, not on the Sale row
+ * itself (see reverseSale). A sale can only be reversed once (enforced
+ * by SaleNotFoundError), so there's at most one matching log per sale.
+ */
+export async function listReversedSales(
+  filters: SaleFilters = {},
+): Promise<ReversedSaleInfo[]> {
+  const sales = await prisma.sale.findMany({
+    where: {
+      deletedAt: { not: null },
+      ...(filters.sellerId ? { sellerId: filters.sellerId } : {}),
+    },
+    include: { seller: { select: { name: true } } },
+    orderBy: { deletedAt: "desc" },
+  });
+
+  if (sales.length === 0) return [];
+
+  const logs = await prisma.movementLog.findMany({
+    where: {
+      entityType: "Sale",
+      entityId: { in: sales.map((sale) => sale.id) },
+      action: { in: ["RETURN_SALE", "VOID_SALE"] },
+    },
+    include: { user: { select: { name: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const logBySaleId = new Map<string, (typeof logs)[number]>();
+  for (const log of logs) {
+    // First one wins — orderBy desc means that's the most recent, which
+    // matters if this ever stops being a one-time-only action.
+    if (!logBySaleId.has(log.entityId)) {
+      logBySaleId.set(log.entityId, log);
+    }
+  }
+
+  const results: ReversedSaleInfo[] = [];
+  for (const sale of sales) {
+    const log = logBySaleId.get(sale.id);
+    if (!log) continue; // defensive — shouldn't happen in practice
+    const metadata = log.metadata as Record<string, unknown>;
+    results.push({
+      sale,
+      action: log.action as "RETURN_SALE" | "VOID_SALE",
+      reason: typeof metadata.reason === "string" ? metadata.reason : null,
+      performedBy: log.user.name,
+      reversedAt: log.createdAt,
+    });
+  }
+
+  return results;
+}
