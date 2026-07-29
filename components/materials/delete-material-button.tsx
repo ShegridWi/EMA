@@ -1,19 +1,24 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { deleteMaterialAction } from "@/lib/actions/materials";
 import { useToast } from "@/components/ui/toast-provider";
+import { PromptModal } from "@/components/ui/prompt-modal";
 
+// Uses PromptModal (components/ui) instead of window.confirm() — no
+// `inputLabel` since deleting doesn't take a reason, so the modal renders
+// as a plain yes/no confirm, same as the deactivate buttons.
 export function DeleteMaterialButton({ id }: { id: string }) {
   const t = useTranslations("Common");
   const router = useRouter();
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
 
-  function handleDelete() {
-    if (!window.confirm(t("confirmDelete"))) return;
+  function handleConfirm() {
+    setOpen(false);
     startTransition(async () => {
       const result = await deleteMaterialAction({ id });
       if (!result.success) {
@@ -26,13 +31,25 @@ export function DeleteMaterialButton({ id }: { id: string }) {
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleDelete}
-      disabled={isPending}
-      className="text-red-600 underline disabled:opacity-50 dark:text-red-400"
-    >
-      {t("delete")}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        disabled={isPending}
+        className="text-red-600 underline disabled:opacity-50 dark:text-red-400"
+      >
+        {t("delete")}
+      </button>
+
+      <PromptModal
+        open={open}
+        title={t("delete")}
+        message={t("confirmDelete")}
+        confirmLabel={t("confirm")}
+        cancelLabel={t("cancel")}
+        onConfirm={handleConfirm}
+        onCancel={() => setOpen(false)}
+      />
+    </>
   );
 }
