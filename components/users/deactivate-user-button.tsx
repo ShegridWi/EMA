@@ -1,15 +1,22 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { deactivateUserAction } from "@/lib/actions/users";
 import { useToast } from "@/components/ui/toast-provider";
+import { PromptModal } from "@/components/ui/prompt-modal";
 
 // `disabled` is passed by the caller (app/[locale]/(dashboard)/users/page.tsx)
 // for the admin's own row — the Server Action rejects self-deactivation too
 // (CannotDeactivateSelfError), but hiding it from the UI avoids a confusing
 // error for a mistake that's easy to make by accident (see .prompts/06-users-admin.md).
+//
+// Uses PromptModal (components/ui) instead of window.confirm() — no
+// `inputLabel` since deactivating doesn't take a reason (unlike
+// reactivate), so the modal renders as a plain yes/no confirm, same as
+// components/materials/deactivate-material-button.tsx and
+// components/products/deactivate-product-button.tsx.
 export function DeactivateUserButton({
   id,
   disabled,
@@ -22,9 +29,10 @@ export function DeactivateUserButton({
   const router = useRouter();
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
 
-  function handleDeactivate() {
-    if (!window.confirm(t("confirmDeactivate"))) return;
+  function handleConfirm() {
+    setOpen(false);
     startTransition(async () => {
       const result = await deactivateUserAction({ id });
       if (!result.success) {
@@ -44,13 +52,25 @@ export function DeactivateUserButton({
   if (disabled) return null;
 
   return (
-    <button
-      type="button"
-      onClick={handleDeactivate}
-      disabled={isPending}
-      className="text-red-600 underline disabled:opacity-50 dark:text-red-400"
-    >
-      {t("deactivate")}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        disabled={isPending}
+        className="text-red-600 underline disabled:opacity-50 dark:text-red-400"
+      >
+        {t("deactivate")}
+      </button>
+
+      <PromptModal
+        open={open}
+        title={t("deactivate")}
+        message={t("confirmDeactivate")}
+        confirmLabel={tCommon("confirm")}
+        cancelLabel={tCommon("cancel")}
+        onConfirm={handleConfirm}
+        onCancel={() => setOpen(false)}
+      />
+    </>
   );
 }
