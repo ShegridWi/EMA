@@ -11,3 +11,166 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  ADMIN
+  SELLER
+}
+
+enum City {
+  LA_PAZ
+  SANTA_CRUZ
+}
+
+enum Unit {
+  METERS
+  UNITS
+  ROLLS
+}
+
+enum ProductKind {
+  UNIT
+  SET
+}
+
+enum PieceRole {
+  TOP
+  BOTTOM
+  CAP
+}
+
+// Fixed size catalog (confirmed with the business, see 04-scope-mvp.md #6).
+enum Size {
+  XS
+  S
+  M
+  L
+  XL
+  XXL
+}
+
+enum SaleType {
+  CASH
+  ORDER
+  RESERVATION
+}
+
+enum PaymentMethod {
+  QR
+  CASH
+}
+
+// Append-only log actions. Extend this enum as new mutating actions are
+// added; never repurpose an existing value (breaks historical entries).
+enum MovementAction {
+  LOGIN
+  CREATE_MATERIAL
+  UPDATE_MATERIAL
+  DELETE_MATERIAL
+  CREATE_PRODUCT
+  UPDATE_PRODUCT
+  DELETE_PRODUCT
+  CREATE_SALE
+  UPDATE_SALE
+  DELETE_SALE
+  CREATE_USER
+  UPDATE_USER
+  DELETE_USER
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         Role
+  city         City
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  materials    Material[]
+  products     Product[]
+  sales        Sale[]
+  movementLogs MovementLog[]
+}
+
+model Material {
+  id            String    @id @default(uuid())
+  // materialType/color: free text for now, see 04-scope-mvp.md #5
+  // (pending confirmation on an admin-editable catalog).
+  materialType  String
+  color         String?
+  type          String
+  quantity      Decimal   @db.Decimal(10, 2)
+  unit          Unit
+  city          City
+  purchasePrice Decimal   @db.Decimal(10, 2)
+  createdById   String
+  createdBy     User      @relation(fields: [createdById], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  kind        ProductKind
+  description String
+  color       String
+  size        Size
+  quantity    Int
+  price       Decimal     @db.Decimal(10, 2)
+  city        City
+  setId       String?
+  set         Product?    @relation("ProductPieces", fields: [setId], references: [id])
+  pieces      Product[]   @relation("ProductPieces")
+  pieceRole   PieceRole?
+  createdById String
+  createdBy   User        @relation(fields: [createdById], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
+
+  sales       Sale[]
+}
+
+model Sale {
+  id            String        @id @default(uuid())
+  productId     String
+  product       Product       @relation(fields: [productId], references: [id])
+  kind          ProductKind
+  description   String
+  color         String
+  size          Size
+  quantity      Int
+  unitPrice     Decimal       @db.Decimal(10, 2)
+  totalPrice    Decimal       @db.Decimal(10, 2)
+  city          City
+  saleDate      DateTime
+  saleType      SaleType
+  paymentMethod PaymentMethod
+  amountPaid    Decimal       @db.Decimal(10, 2)
+  balanceDue    Decimal       @db.Decimal(10, 2)
+  deliveryDate  DateTime?
+  sellerId      String
+  seller        User          @relation(fields: [sellerId], references: [id])
+  customerName  String?
+  customerPhone String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+}
+
+model MovementLog {
+  id         String         @id @default(uuid())
+  userId     String
+  user       User           @relation(fields: [userId], references: [id])
+  action     MovementAction
+  entityType String
+  entityId   String
+  metadata   Json
+  createdAt  DateTime       @default(now())
+}
