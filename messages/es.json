@@ -145,6 +145,11 @@
     "totalPrice": "Total",
     "balanceDue": "Saldo pendiente",
     "kindSet": "Conjunto",
-    "kindUnit": "Unidad"
+    "kindUnit": "Unidad",
+    "markAsReturn": "Marcar como devolución",
+    "voidSale": "Anular venta",
+    "confirmReturn": "¿Confirmas que este producto fue devuelto? Se restaurará el stock y la venta se quitará del historial activo.",
+    "confirmVoid": "¿Confirmas que quieres anular esta venta? Se restaurará el stock y la venta se quitará del historial activo.",
+    "errorNotFound": "Esta venta ya no está disponible (puede que ya haya sido devuelta o anulada)."
   }
 }

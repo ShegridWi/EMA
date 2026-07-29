@@ -145,6 +145,11 @@
     "totalPrice": "Total",
     "balanceDue": "Balance due",
     "kindSet": "Set",
-    "kindUnit": "Unit"
+    "kindUnit": "Unit",
+    "markAsReturn": "Mark as return",
+    "voidSale": "Void sale",
+    "confirmReturn": "Confirm this product was returned? Stock will be restored and the sale removed from the active history.",
+    "confirmVoid": "Confirm you want to void this sale? Stock will be restored and the sale removed from the active history.",
+    "errorNotFound": "This sale is no longer available (it may have already been returned or voided)."
   }
 }

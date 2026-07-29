@@ -3,7 +3,11 @@ import { prisma } from "@/lib/db";
 import {
   calculateSaleTotals,
   createSale,
+  returnSale,
+  voidSale,
+  listSales,
   InsufficientStockError,
+  SaleNotFoundError,
 } from "@/lib/inventory";
 
 // These are integration tests against the real local Postgres (docker
@@ -319,5 +323,186 @@ describe("createSale — SET stock deduction", () => {
 
     const sales = await prisma.sale.findMany({ where: { productId: setId } });
     expect(sales).toHaveLength(0);
+  });
+});
+
+describe("returnSale / voidSale — UNIT", () => {
+  let productId: string;
+  let saleId: string;
+
+  beforeEach(async () => {
+    const product = await prisma.product.create({
+      data: {
+        kind: "UNIT",
+        description: `${TEST_TAG}reverse-unit`,
+        color: "Negro",
+        size: "M",
+        quantity: 5,
+        price: 50,
+        city: "LA_PAZ",
+        createdById: testUserId,
+      },
+    });
+    productId = product.id;
+
+    const sale = await createSale(
+      {
+        productId,
+        quantity: 2,
+        unitPrice: 50,
+        city: "LA_PAZ",
+        saleDate: new Date(),
+        saleType: "CASH",
+        paymentMethod: "CASH",
+        amountPaid: 100,
+      },
+      testUserId,
+    );
+    saleId = sale.id;
+  });
+
+  afterEach(async () => {
+    await prisma.sale.deleteMany({ where: { productId } });
+    await prisma.product.deleteMany({ where: { id: productId } });
+  });
+
+  it("returnSale restores stock and soft-deletes the sale", async () => {
+    await returnSale(saleId, testUserId);
+
+    const product = await prisma.product.findUniqueOrThrow({
+      where: { id: productId },
+    });
+    expect(product.quantity).toBe(5); // 3 (after the sale) + 2 restored
+
+    const sale = await prisma.sale.findUniqueOrThrow({ where: { id: saleId } });
+    expect(sale.deletedAt).not.toBeNull();
+
+    const activeSales = await listSales({ sellerId: testUserId });
+    expect(activeSales.some((s) => s.id === saleId)).toBe(false);
+  });
+
+  it("voidSale restores stock and soft-deletes the sale", async () => {
+    await voidSale(saleId, testUserId);
+
+    const product = await prisma.product.findUniqueOrThrow({
+      where: { id: productId },
+    });
+    expect(product.quantity).toBe(5);
+
+    const sale = await prisma.sale.findUniqueOrThrow({ where: { id: saleId } });
+    expect(sale.deletedAt).not.toBeNull();
+  });
+
+  it("writes RETURN_SALE / VOID_SALE MovementLog entries", async () => {
+    await returnSale(saleId, testUserId);
+    const returnLogs = await prisma.movementLog.findMany({
+      where: { entityId: saleId, action: "RETURN_SALE" },
+    });
+    expect(returnLogs).toHaveLength(1);
+  });
+
+  it("rejects reversing the same sale twice, without double-restoring stock", async () => {
+    await returnSale(saleId, testUserId);
+
+    await expect(returnSale(saleId, testUserId)).rejects.toBeInstanceOf(
+      SaleNotFoundError,
+    );
+    await expect(voidSale(saleId, testUserId)).rejects.toBeInstanceOf(
+      SaleNotFoundError,
+    );
+
+    const product = await prisma.product.findUniqueOrThrow({
+      where: { id: productId },
+    });
+    expect(product.quantity).toBe(5); // still just the one restore, not two
+  });
+});
+
+describe("returnSale / voidSale — SET", () => {
+  let setId: string;
+  let topId: string;
+  let bottomId: string;
+  let saleId: string;
+
+  beforeEach(async () => {
+    const set = await prisma.product.create({
+      data: {
+        kind: "SET",
+        description: `${TEST_TAG}reverse-set`,
+        color: "Blanco",
+        size: "S",
+        quantity: 0,
+        price: 100,
+        city: "LA_PAZ",
+        createdById: testUserId,
+      },
+    });
+    setId = set.id;
+
+    const [top, bottom] = await Promise.all([
+      prisma.product.create({
+        data: {
+          kind: "UNIT",
+          description: `${TEST_TAG}reverse-set - Top`,
+          color: "Blanco",
+          size: "S",
+          quantity: 5,
+          price: 100,
+          city: "LA_PAZ",
+          setId,
+          pieceRole: "TOP",
+          createdById: testUserId,
+        },
+      }),
+      prisma.product.create({
+        data: {
+          kind: "UNIT",
+          description: `${TEST_TAG}reverse-set - Bottom`,
+          color: "Blanco",
+          size: "S",
+          quantity: 5,
+          price: 100,
+          city: "LA_PAZ",
+          setId,
+          pieceRole: "BOTTOM",
+          createdById: testUserId,
+        },
+      }),
+    ]);
+    topId = top.id;
+    bottomId = bottom.id;
+
+    const sale = await createSale(
+      {
+        productId: setId,
+        quantity: 2,
+        unitPrice: 100,
+        city: "LA_PAZ",
+        saleDate: new Date(),
+        saleType: "CASH",
+        paymentMethod: "CASH",
+        amountPaid: 200,
+      },
+      testUserId,
+    );
+    saleId = sale.id;
+  });
+
+  afterEach(async () => {
+    await prisma.sale.deleteMany({ where: { productId: setId } });
+    await prisma.product.deleteMany({
+      where: { id: { in: [setId, topId, bottomId] } },
+    });
+  });
+
+  it("restores stock to every piece", async () => {
+    await returnSale(saleId, testUserId);
+
+    const [top, bottom] = await Promise.all([
+      prisma.product.findUniqueOrThrow({ where: { id: topId } }),
+      prisma.product.findUniqueOrThrow({ where: { id: bottomId } }),
+    ]);
+    expect(top.quantity).toBe(5); // 3 (after the sale) + 2 restored
+    expect(bottom.quantity).toBe(5);
   });
 });

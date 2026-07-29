@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { listSales } from "@/lib/inventory";
 import { Link } from "@/i18n/navigation";
+import { SaleActions } from "@/components/sales/sale-actions";
 
 export default async function SalesPage() {
   const session = await auth();
@@ -48,6 +49,7 @@ export default async function SalesPage() {
                 <th className="p-2">{t("paymentMethod")}</th>
                 <th className="p-2">{t("city")}</th>
                 {isAdmin && <th className="p-2">{t("seller")}</th>}
+                {isAdmin && <th className="p-2">{tCommon("actions")}</th>}
               </tr>
             </thead>
             <tbody>
@@ -64,6 +66,11 @@ export default async function SalesPage() {
                   <td className="p-2">{tPaymentMethod(sale.paymentMethod)}</td>
                   <td className="p-2">{tCity(sale.city)}</td>
                   {isAdmin && <td className="p-2">{sale.seller.name}</td>}
+                  {isAdmin && (
+                    <td className="p-2">
+                      <SaleActions saleId={sale.id} />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

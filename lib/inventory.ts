@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/db";
 import { writeAuditLog } from "@/lib/audit";
-import type { City, PieceRole } from "@/app/generated/prisma/enums";
+import type {
+  City,
+  PieceRole,
+  MovementAction,
+} from "@/app/generated/prisma/enums";
 import type { Material, Product, Sale } from "@/app/generated/prisma/client";
 import type {
   CreateMaterialInput,
@@ -492,4 +496,81 @@ export async function createSale(input: CreateSaleInput, sellerId: string) {
 
     return sale;
   });
+}
+
+export class SaleNotFoundError extends Error {
+  constructor(public readonly saleId: string) {
+    super(`Sale not found or already returned/voided: ${saleId}`);
+    this.name = "SaleNotFoundError";
+  }
+}
+
+/**
+ * Shared implementation for "mark as return" and "void sale" — ADMIN
+ * only, always soft delete (never `.delete()`). Both cases restore the
+ * stock that `createSale` deducted (the item is either back in the
+ * warehouse after a return, or the deduction shouldn't have happened at
+ * all after a void) and are functionally identical except for which
+ * MovementAction is logged, which is what lets reports later tell a
+ * customer return apart from an admin correcting a mistake.
+ */
+async function reverseSale(
+  id: string,
+  userId: string,
+  action: Extract<MovementAction, "RETURN_SALE" | "VOID_SALE">,
+) {
+  return prisma.$transaction(async (tx) => {
+    const sale = await tx.sale.findFirst({ where: { id, deletedAt: null } });
+    if (!sale) {
+      throw new SaleNotFoundError(id);
+    }
+
+    // Not filtered by deletedAt: stock must stay accurate even if the
+    // product itself was deactivated after the sale.
+    const product = await tx.product.findUnique({
+      where: { id: sale.productId },
+    });
+
+    if (product) {
+      if (product.kind === "UNIT") {
+        await tx.product.update({
+          where: { id: product.id },
+          data: { quantity: { increment: sale.quantity } },
+        });
+      } else {
+        const pieces = await tx.product.findMany({
+          where: { setId: product.id },
+        });
+        for (const piece of pieces) {
+          await tx.product.update({
+            where: { id: piece.id },
+            data: { quantity: { increment: sale.quantity } },
+          });
+        }
+      }
+    }
+
+    const updatedSale = await tx.sale.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    await writeAuditLog(tx, {
+      userId,
+      action,
+      entityType: "Sale",
+      entityId: sale.id,
+      metadata: { productId: sale.productId, quantity: sale.quantity },
+    });
+
+    return updatedSale;
+  });
+}
+
+export function returnSale(id: string, userId: string) {
+  return reverseSale(id, userId, "RETURN_SALE");
+}
+
+export function voidSale(id: string, userId: string) {
+  return reverseSale(id, userId, "VOID_SALE");
 }
