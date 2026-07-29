@@ -328,5 +328,16 @@
     "tableSale": "Related sale",
     "tableUser": "Who",
     "linkLabel": "History"
+  },
+  "MaterialHistory": {
+    "title": "History for {description}",
+    "backToList": "Back to list",
+    "tableDate": "Date",
+    "tableBefore": "Before",
+    "tableAfter": "After",
+    "tableDelta": "Change",
+    "tableReason": "Reason",
+    "tableUser": "Who",
+    "linkLabel": "History"
   }
 }

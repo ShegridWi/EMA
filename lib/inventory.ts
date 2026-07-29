@@ -58,6 +58,34 @@ async function writeStockMovement(
   });
 }
 
+// Same idea as writeStockMovement above, for Material instead of
+// Product — only ever CREATED (createMaterial) or MANUAL_ADJUSTMENT
+// (updateMaterial), no saleId (materials aren't sold directly). Callers
+// pass plain numbers (via `.toNumber()` on whatever Decimal value they
+// read) — Prisma accepts a JS number for a Decimal column same as it
+// does a Decimal instance.
+async function writeMaterialStockMovement(
+  tx: Prisma.TransactionClient,
+  entry: {
+    materialId: string;
+    quantityBefore: number;
+    quantityAfter: number;
+    reason: StockMovementReason;
+    userId: string;
+  },
+) {
+  await tx.materialStockMovement.create({
+    data: {
+      materialId: entry.materialId,
+      quantityBefore: entry.quantityBefore,
+      quantityAfter: entry.quantityAfter,
+      delta: entry.quantityAfter - entry.quantityBefore,
+      reason: entry.reason,
+      userId: entry.userId,
+    },
+  });
+}
+
 export type SerializedMaterial = Omit<
   Material,
   "quantity" | "purchasePrice"
@@ -141,6 +169,16 @@ export async function createMaterial(
       metadata: input,
     });
 
+    if (material.quantity.toNumber() > 0) {
+      await writeMaterialStockMovement(tx, {
+        materialId: material.id,
+        quantityBefore: 0,
+        quantityAfter: material.quantity.toNumber(),
+        reason: "CREATED",
+        userId,
+      });
+    }
+
     return material;
   });
 }
@@ -152,6 +190,12 @@ export async function updateMaterial(
   const { id, ...data } = input;
 
   return prisma.$transaction(async (tx) => {
+    // Read the current quantity *inside* the transaction, before the
+    // update, so the before/after pair in the MaterialStockMovement row
+    // below can't race with a concurrent write — same reasoning as
+    // updateProduct further down this file.
+    const existing = await tx.material.findUniqueOrThrow({ where: { id } });
+
     const material = await tx.material.update({
       where: { id },
       data,
@@ -164,6 +208,18 @@ export async function updateMaterial(
       entityId: material.id,
       metadata: data,
     });
+
+    const quantityBefore = existing.quantity.toNumber();
+    const quantityAfter = material.quantity.toNumber();
+    if (quantityAfter !== quantityBefore) {
+      await writeMaterialStockMovement(tx, {
+        materialId: material.id,
+        quantityBefore,
+        quantityAfter,
+        reason: "MANUAL_ADJUSTMENT",
+        userId,
+      });
+    }
 
     return material;
   });
@@ -232,6 +288,21 @@ export async function reactivateMaterial(
     });
 
     return material;
+  });
+}
+
+/**
+ * Every stock-affecting event for a single material — creation and
+ * manual edits (there's no sale/return/void path for Material, unlike
+ * Product). Read-only; every row here is written by createMaterial/
+ * updateMaterial above, in the same transaction as the quantity change
+ * they record.
+ */
+export function listMaterialStockMovements(materialId: string) {
+  return prisma.materialStockMovement.findMany({
+    where: { materialId },
+    include: { user: { select: { name: true } } },
+    orderBy: { createdAt: "desc" },
   });
 }
 
