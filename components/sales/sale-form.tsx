@@ -21,14 +21,30 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
   const router = useRouter();
 
   const [productId, setProductId] = useState(products[0]?.id ?? "");
+  const [productSearch, setProductSearch] = useState("");
   const [saleType, setSaleType] = useState<string>(SaleType.CASH);
   const [paymentMethod, setPaymentMethod] = useState<string>(
     PaymentMethod.CASH,
   );
 
+  const filteredProducts = useMemo(() => {
+    const query = productSearch.trim().toLowerCase();
+    if (!query) return products;
+    return products.filter((product) =>
+      `${product.description} ${product.color}`.toLowerCase().includes(query),
+    );
+  }, [products, productSearch]);
+
+  // Derived during render (not synced via an effect): if the current
+  // selection falls outside the search filter, fall back to the first
+  // match. `productId` itself only changes on an explicit user pick.
+  const effectiveProductId = filteredProducts.some((p) => p.id === productId)
+    ? productId
+    : (filteredProducts[0]?.id ?? "");
+
   const selectedProduct = useMemo(
-    () => products.find((p) => p.id === productId),
-    [products, productId],
+    () => products.find((p) => p.id === effectiveProductId),
+    [products, effectiveProductId],
   );
 
   async function action(
@@ -81,15 +97,22 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
         <label htmlFor="productId" className="text-sm font-medium">
           {t("product")}
         </label>
+        <input
+          type="search"
+          value={productSearch}
+          onChange={(e) => setProductSearch(e.target.value)}
+          placeholder={t("searchProductPlaceholder")}
+          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+        />
         <select
           id="productId"
           name="productId"
           required
-          value={productId}
+          value={effectiveProductId}
           onChange={(e) => setProductId(e.target.value)}
           className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
         >
-          {products.map((product) => (
+          {filteredProducts.map((product) => (
             <option key={product.id} value={product.id}>
               {product.description} ({product.color}, {product.size})
             </option>

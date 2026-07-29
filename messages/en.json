@@ -122,6 +122,7 @@
     "backToList": "Back to history",
     "product": "Product",
     "selectProduct": "Select a product",
+    "searchProductPlaceholder": "Search product by description or color...",
     "unitAvailable": "{count} available",
     "setNoStockShown": "Set — check each piece's stock in Finished product",
     "quantity": "Quantity",
