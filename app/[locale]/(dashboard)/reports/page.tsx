@@ -16,7 +16,7 @@ export default async function ReportsPage({ params }: Props) {
 
   // Admin-only, no exceptions (03-roles-permissions.md "Reports" row).
   if (session?.user.role !== "ADMIN") {
-    redirect(`/${locale}`);
+    redirect(`/${locale}/dashboard`);
   }
 
   const t = await getTranslations("Reports");

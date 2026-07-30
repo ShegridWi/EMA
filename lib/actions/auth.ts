@@ -43,7 +43,7 @@ export async function loginAction(
     await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
-      redirectTo: `/${preferredLocale}`,
+      redirectTo: `/${preferredLocale}/dashboard`,
     });
   } catch (error) {
     // next-auth's signIn() throws a NEXT_REDIRECT signal on success —
