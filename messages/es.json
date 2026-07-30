@@ -11,6 +11,7 @@
     "confirmDelete": "¿Seguro que quieres eliminar este registro?",
     "empty": "No hay registros todavía.",
     "search": "Buscar",
+    "loading": "Cargando…",
     "errorForbidden": "No tienes permiso para realizar esta acción.",
     "errorValidation": "Revisa los datos del formulario.",
     "errorGeneric": "Ocurrió un error. Intenta de nuevo.",
