@@ -264,7 +264,14 @@
     "dateTo": "To",
     "createSuccess": "Sale registered successfully.",
     "returnSuccess": "Sale marked as returned.",
-    "voidSuccess": "Sale voided successfully."
+    "voidSuccess": "Sale voided successfully.",
+    "detailTitle": "Sale detail",
+    "view": "View",
+    "kindLabel": "Product type",
+    "color": "Color",
+    "size": "Size",
+    "createdAt": "Date & time",
+    "pedidoSummaryTitle": "Request detail"
   },
   "RequestKind": {
     "ORDER": "Order",
@@ -333,9 +340,11 @@
     "errorAlreadyClaimed": "This request was already attended by someone else.",
     "claimSuccess": "Request assigned successfully.",
     "cancelSuccess": "Request cancelled successfully.",
-    "releaseSuccess": "Request released successfully.",
-    "pendingBadgeLabel": "{count} pending requests",
-    "notificationsTitle": "Pending requests"
+    "releaseSuccess": "Request released successfully."
+  },
+  "Notifications": {
+    "title": "Notifications",
+    "badgeLabel": "{count} notifications"
   },
   "Users": {
     "title": "Users",

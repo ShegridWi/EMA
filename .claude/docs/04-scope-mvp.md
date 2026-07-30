@@ -77,6 +77,23 @@ Out of scope for this phase (revisit only if the business asks):
   notification is a per-browser convenience (`localStorage`), not a
   database column, so it doesn't survive switching browsers/devices.
 
+## Phase 11 — sale detail page + new-sale admin notifications
+
+Also requested directly by the business: every sale now has its own
+detail page (`/sales/[id]`, `01-business-rules.md` section 3), reachable
+via a "Ver" button from the sales list, and admins get a notification
+(in the same bell added in phase 10, not a separate one) whenever any
+seller registers a sale — see section 12.
+
+Resolved for this phase:
+
+- **Sale notification recipients**: admins only, not the seller who
+  made the sale — confirmed directly with the business.
+- **One combined bell, not two**: pedido and sale notifications share
+  the same dropdown (`lib/notifications.ts` merges both), sorted
+  together by recency — confirmed directly with the business, to avoid
+  a second header icon for a small business's admin(s).
+
 ## Out of MVP scope (phase 2 / future)
 
 - Multi-branch beyond the 2 fixed cities (dynamic city/branch catalog).

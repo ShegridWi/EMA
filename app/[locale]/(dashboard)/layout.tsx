@@ -5,7 +5,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import { DashboardNav, NavLinks } from "@/components/dashboard-nav";
 import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
-import { PedidoBadge } from "@/components/pedido-badge";
+import { NotificationBadge } from "@/components/notification-badge";
 import { IconButton } from "@/components/ui/icon-button";
 import { LogOut } from "lucide-react";
 
@@ -46,7 +46,7 @@ export default async function DashboardLayout({ children, params }: Props) {
             <span className="hidden text-sm text-muted-foreground sm:inline">
               {tDashboard("welcome", { name: session.user.name ?? "" })}
             </span>
-            <PedidoBadge />
+            <NotificationBadge />
             <ThemeToggle />
             <form
               action={async () => {

@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { FormField } from "@/components/ui/form-field";
 import { MutedText } from "@/components/ui/muted-text";
+import { IconButtonLink } from "@/components/ui/icon-button";
+import { Eye } from "lucide-react";
 
 type Props = {
   searchParams: Promise<{
@@ -100,6 +102,7 @@ export default async function SalesPage({ searchParams }: Props) {
 
   const sellers = isAdmin ? await listUsers() : [];
   const filterHrefState = { q, city, saleType, sellerId, from, to };
+  const locale = await getLocale();
 
   return (
     <div className="flex flex-col gap-6">
@@ -194,7 +197,7 @@ export default async function SalesPage({ searchParams }: Props) {
           tCommon={tCommon}
           tCity={tCity}
           isAdmin={isAdmin}
-          locale={await getLocale()}
+          locale={locale}
           timeZone={timeZone}
         />
       ) : (
@@ -206,6 +209,8 @@ export default async function SalesPage({ searchParams }: Props) {
           tPaymentMethod={tPaymentMethod}
           tCity={tCity}
           isAdmin={isAdmin}
+          locale={locale}
+          timeZone={timeZone}
         />
       )}
     </div>
@@ -222,6 +227,8 @@ async function ActiveSalesTable({
   tPaymentMethod,
   tCity,
   isAdmin,
+  locale,
+  timeZone,
 }: {
   filters: SaleFilters;
   t: TFn;
@@ -230,6 +237,8 @@ async function ActiveSalesTable({
   tPaymentMethod: TFn;
   tCity: TFn;
   isAdmin: boolean;
+  locale: string;
+  timeZone: string;
 }) {
   const sales = await listSales(filters);
 
@@ -242,6 +251,7 @@ async function ActiveSalesTable({
       <table className="w-full min-w-[900px] text-left text-sm">
         <thead>
           <tr className="border-b border-border">
+            <th className="p-2">{t("createdAt")}</th>
             <th className="p-2">{t("product")}</th>
             <th className="p-2">{t("quantity")}</th>
             <th className="p-2">{t("totalPrice")}</th>
@@ -250,12 +260,18 @@ async function ActiveSalesTable({
             <th className="p-2">{t("paymentMethod")}</th>
             <th className="p-2">{t("city")}</th>
             {isAdmin && <th className="p-2">{t("seller")}</th>}
-            {isAdmin && <th className="p-2">{tCommon("actions")}</th>}
+            <th className="p-2">{tCommon("actions")}</th>
           </tr>
         </thead>
         <tbody>
           {sales.map((sale) => (
             <tr key={sale.id} className="border-b border-border/50">
+              <td className="p-2 whitespace-nowrap">
+                {formatInTimezone(sale.createdAt, timeZone, locale, {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                })}
+              </td>
               <td className="p-2">{sale.description}</td>
               <td className="p-2">{sale.quantity}</td>
               <td className="p-2">
@@ -268,11 +284,16 @@ async function ActiveSalesTable({
               <td className="p-2">{tPaymentMethod(sale.paymentMethod)}</td>
               <td className="p-2">{tCity(sale.city)}</td>
               {isAdmin && <td className="p-2">{sale.seller.name}</td>}
-              {isAdmin && (
-                <td className="p-2">
-                  <SaleActions saleId={sale.id} />
-                </td>
-              )}
+              <td className="p-2">
+                <div className="flex items-center gap-2">
+                  <IconButtonLink
+                    href={`/sales/${sale.id}`}
+                    icon={<Eye className="size-5" />}
+                    label={t("view")}
+                  />
+                  {isAdmin && <SaleActions saleId={sale.id} />}
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -318,6 +339,7 @@ async function CancelledSalesTable({
             <th className="p-2">{t("performedBy")}</th>
             <th className="p-2">{t("reversedAt")}</th>
             {isAdmin && <th className="p-2">{t("seller")}</th>}
+            <th className="p-2">{tCommon("actions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -340,6 +362,13 @@ async function CancelledSalesTable({
                 {formatInTimezone(reversedAt, timeZone, locale)}
               </td>
               {isAdmin && <td className="p-2">{sale.seller.name}</td>}
+              <td className="p-2">
+                <IconButtonLink
+                  href={`/sales/${sale.id}`}
+                  icon={<Eye className="size-5" />}
+                  label={t("view")}
+                />
+              </td>
             </tr>
           ))}
         </tbody>

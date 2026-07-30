@@ -18,9 +18,7 @@ import { Alert } from "@/components/ui/alert";
 import { MutedText } from "@/components/ui/muted-text";
 
 type ActionResult =
-  | { success: true; data: unknown }
-  | { success: false; error: unknown }
-  | null;
+  { success: true; data: unknown } | { success: false; error: unknown } | null;
 
 type PedidoInitialValues = {
   quantity?: string;
@@ -29,9 +27,12 @@ type PedidoInitialValues = {
   notes?: string;
 };
 
+type PedidoSummaryField = { label: string; value: string };
+
 export function SaleForm({
   products,
   pedidoId,
+  pedidoSummary,
   initialValues,
 }: {
   products: SerializedProduct[];
@@ -42,6 +43,12 @@ export function SaleForm({
   // landing-page catalog strings with no guaranteed match to a real
   // Product's free-text color, so there's no auto-selection.
   pedidoId?: string;
+  // Already-translated label/value pairs built server-side
+  // (app/[locale]/(dashboard)/sales/new/page.tsx) — the original
+  // request's details, shown read-only above the form so the seller can
+  // see exactly what the customer asked for while filling in the sale.
+  // `null` when there's no pedido behind this sale.
+  pedidoSummary?: PedidoSummaryField[] | null;
   initialValues?: PedidoInitialValues;
 }) {
   const t = useTranslations("Sales");
@@ -121,7 +128,10 @@ export function SaleForm({
         showToast("error", tCommon("errorForbidden"));
       } else if (state.error === "insufficient_stock") {
         showToast("warning", t("errorInsufficientStock"));
-      } else if (state.error === "not_claimable" || state.error === "not_found") {
+      } else if (
+        state.error === "not_claimable" ||
+        state.error === "not_found"
+      ) {
         showToast("error", tCommon("errorGeneric"));
       } else {
         showToast("error", tCommon("errorValidation"));
@@ -137,20 +147,35 @@ export function SaleForm({
   const todayStr = new Date().toISOString().slice(0, 10);
 
   return (
-    <form action={formAction} className="flex max-w-md flex-col gap-4">
-      <FormField label={t("product")} htmlFor="productId">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="search"
-            value={productSearch}
-            onChange={(e) => setProductSearch(e.target.value)}
-            placeholder={t("searchProductPlaceholder")}
-            className="w-full rounded-md border border-border bg-background py-2 pr-3 pl-9 text-sm text-foreground transition-colors duration-200 ease-in-out placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+    <div className="flex max-w-md flex-col gap-6">
+      {pedidoSummary && (
+        <div className="flex flex-col gap-2 rounded-md border border-border bg-muted/40 p-4">
+          <p className="text-sm font-semibold">{t("pedidoSummaryTitle")}</p>
+          <dl className="grid grid-cols-1 gap-2 text-sm">
+            {pedidoSummary.map((field) => (
+              <div key={field.label} className="flex flex-col">
+                <dt className="text-xs text-muted-foreground">{field.label}</dt>
+                <dd className="whitespace-pre-wrap">{field.value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
+      )}
 
-        {/*
+      <form action={formAction} className="flex flex-col gap-4">
+        <FormField label={t("product")} htmlFor="productId">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              placeholder={t("searchProductPlaceholder")}
+              className="w-full rounded-md border border-border bg-background py-2 pr-3 pl-9 text-sm text-foreground transition-colors duration-200 ease-in-out placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+
+          {/*
           Quick-pick results list under the search box. Clicking a row
           just updates `productId` — the same state the <select> below
           reads — so the dropdown's selection updates automatically
@@ -158,196 +183,213 @@ export function SaleForm({
           whether the product is a Set or a Unit, since that isn't
           obvious from the description alone.
         */}
-        <div className="max-h-48 overflow-y-auto rounded-md border border-border">
-          {filteredProducts.length === 0 ? (
-            <MutedText className="p-2 text-xs">
-              {t("searchResultsEmpty")}
+          <div className="max-h-48 overflow-y-auto rounded-md border border-border">
+            {filteredProducts.length === 0 ? (
+              <MutedText className="p-2 text-xs">
+                {t("searchResultsEmpty")}
+              </MutedText>
+            ) : (
+              <ul className="divide-y divide-border">
+                {filteredProducts.map((product) => {
+                  const isSelected = product.id === effectiveProductId;
+                  return (
+                    <li key={product.id}>
+                      <button
+                        type="button"
+                        onClick={() => setProductId(product.id)}
+                        aria-pressed={isSelected}
+                        className={`flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors duration-200 ease-in-out hover:bg-muted ${
+                          isSelected ? "bg-muted" : ""
+                        }`}
+                      >
+                        <span>
+                          {product.description} ({product.color}, {product.size}
+                          )
+                        </span>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {product.kind === "SET"
+                            ? t("kindSet")
+                            : t("kindUnit")}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          <Select
+            id="productId"
+            name="productId"
+            required
+            value={effectiveProductId}
+            onChange={(e) => setProductId(e.target.value)}
+          >
+            {filteredProducts.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.description} ({product.color}, {product.size}) —{" "}
+                {product.kind === "SET" ? t("kindSet") : t("kindUnit")}
+              </option>
+            ))}
+          </Select>
+          {selectedProduct && (
+            <MutedText className="text-xs">
+              {selectedProduct.kind === "UNIT"
+                ? t("unitAvailable", { count: selectedProduct.quantity })
+                : t("setNoStockShown")}
             </MutedText>
-          ) : (
-            <ul className="divide-y divide-border">
-              {filteredProducts.map((product) => {
-                const isSelected = product.id === effectiveProductId;
-                return (
-                  <li key={product.id}>
-                    <button
-                      type="button"
-                      onClick={() => setProductId(product.id)}
-                      aria-pressed={isSelected}
-                      className={`flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors duration-200 ease-in-out hover:bg-muted ${
-                        isSelected ? "bg-muted" : ""
-                      }`}
-                    >
-                      <span>
-                        {product.description} ({product.color}, {product.size})
-                      </span>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {product.kind === "SET" ? t("kindSet") : t("kindUnit")}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
           )}
+        </FormField>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormField label={t("quantity")} htmlFor="quantity">
+            <Input
+              id="quantity"
+              name="quantity"
+              type="number"
+              step="1"
+              min="1"
+              required
+              defaultValue={initialValues?.quantity ?? 1}
+            />
+          </FormField>
+
+          <FormField label={t("unitPrice")} htmlFor="unitPrice">
+            <Input
+              key={selectedProduct?.id}
+              id="unitPrice"
+              name="unitPrice"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              defaultValue={selectedProduct?.price}
+            />
+          </FormField>
         </div>
 
-        <Select
-          id="productId"
-          name="productId"
-          required
-          value={effectiveProductId}
-          onChange={(e) => setProductId(e.target.value)}
-        >
-          {filteredProducts.map((product) => (
-            <option key={product.id} value={product.id}>
-              {product.description} ({product.color}, {product.size}) —{" "}
-              {product.kind === "SET" ? t("kindSet") : t("kindUnit")}
-            </option>
-          ))}
-        </Select>
-        {selectedProduct && (
-          <MutedText className="text-xs">
-            {selectedProduct.kind === "UNIT"
-              ? t("unitAvailable", { count: selectedProduct.quantity })
-              : t("setNoStockShown")}
-          </MutedText>
-        )}
-      </FormField>
+        <input
+          type="hidden"
+          name="city"
+          value={selectedProduct?.city ?? City.LA_PAZ}
+        />
+        <MutedText className="text-xs">
+          {t("city")}: {selectedProduct ? tCity(selectedProduct.city) : "—"}
+        </MutedText>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label={t("quantity")} htmlFor="quantity">
+        <FormField label={t("saleDate")} htmlFor="saleDate">
           <Input
-            id="quantity"
-            name="quantity"
-            type="number"
-            step="1"
-            min="1"
+            id="saleDate"
+            name="saleDate"
+            type="date"
             required
-            defaultValue={initialValues?.quantity ?? 1}
+            defaultValue={todayStr}
           />
         </FormField>
 
-        <FormField label={t("unitPrice")} htmlFor="unitPrice">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormField label={t("saleType")} htmlFor="saleType">
+            <Select
+              id="saleType"
+              name="saleType"
+              required
+              value={saleType}
+              onChange={(e) => setSaleType(e.target.value)}
+            >
+              {Object.values(SaleType).map((type) => (
+                <option key={type} value={type}>
+                  {tSaleType(type)}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+
+          <FormField label={t("paymentMethod")} htmlFor="paymentMethod">
+            <Select
+              id="paymentMethod"
+              name="paymentMethod"
+              required
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
+              {Object.values(PaymentMethod).map((method) => (
+                <option key={method} value={method}>
+                  {tPaymentMethod(method)}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+        </div>
+
+        {paymentMethod === PaymentMethod.QR && (
+          <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border text-center text-xs text-muted-foreground">
+            {t("qrPlaceholder")}
+          </div>
+        )}
+
+        <FormField label={t("amountPaid")} htmlFor="amountPaid">
           <Input
-            key={selectedProduct?.id}
-            id="unitPrice"
-            name="unitPrice"
+            id="amountPaid"
+            name="amountPaid"
             type="number"
             step="0.01"
             min="0"
             required
-            defaultValue={selectedProduct?.price}
+            defaultValue={0}
           />
         </FormField>
-      </div>
 
-      <input
-        type="hidden"
-        name="city"
-        value={selectedProduct?.city ?? City.LA_PAZ}
-      />
-      <MutedText className="text-xs">
-        {t("city")}: {selectedProduct ? tCity(selectedProduct.city) : "—"}
-      </MutedText>
+        {saleType !== SaleType.CASH && (
+          <FormField label={t("expectedDate")} htmlFor="deliveryDate">
+            <Input id="deliveryDate" name="deliveryDate" type="date" required />
+          </FormField>
+        )}
 
-      <FormField label={t("saleDate")} htmlFor="saleDate">
-        <Input
-          id="saleDate"
-          name="saleDate"
-          type="date"
-          required
-          defaultValue={todayStr}
-        />
-      </FormField>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormField label={t("customerName")} htmlFor="customerName">
+            <Input
+              id="customerName"
+              name="customerName"
+              defaultValue={initialValues?.customerName}
+            />
+          </FormField>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label={t("saleType")} htmlFor="saleType">
-          <Select
-            id="saleType"
-            name="saleType"
-            required
-            value={saleType}
-            onChange={(e) => setSaleType(e.target.value)}
-          >
-            {Object.values(SaleType).map((type) => (
-              <option key={type} value={type}>
-                {tSaleType(type)}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-
-        <FormField label={t("paymentMethod")} htmlFor="paymentMethod">
-          <Select
-            id="paymentMethod"
-            name="paymentMethod"
-            required
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
-          >
-            {Object.values(PaymentMethod).map((method) => (
-              <option key={method} value={method}>
-                {tPaymentMethod(method)}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-      </div>
-
-      {paymentMethod === PaymentMethod.QR && (
-        <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border text-center text-xs text-muted-foreground">
-          {t("qrPlaceholder")}
+          <FormField label={t("customerPhone")} htmlFor="customerPhone">
+            <Input
+              id="customerPhone"
+              name="customerPhone"
+              defaultValue={initialValues?.customerPhone}
+            />
+          </FormField>
         </div>
-      )}
 
-      <FormField label={t("amountPaid")} htmlFor="amountPaid">
-        <Input
-          id="amountPaid"
-          name="amountPaid"
-          type="number"
-          step="0.01"
-          min="0"
-          required
-          defaultValue={0}
-        />
-      </FormField>
-
-      {saleType !== SaleType.CASH && (
-        <FormField label={t("expectedDate")} htmlFor="deliveryDate">
-          <Input id="deliveryDate" name="deliveryDate" type="date" required />
-        </FormField>
-      )}
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label={t("customerName")} htmlFor="customerName">
-          <Input id="customerName" name="customerName" defaultValue={initialValues?.customerName} />
+        <FormField label={t("notes")} htmlFor="notes">
+          <Textarea
+            id="notes"
+            name="notes"
+            rows={3}
+            defaultValue={initialValues?.notes}
+          />
         </FormField>
 
-        <FormField label={t("customerPhone")} htmlFor="customerPhone">
-          <Input id="customerPhone" name="customerPhone" defaultValue={initialValues?.customerPhone} />
-        </FormField>
-      </div>
+        {state?.success === false && (
+          <Alert>
+            {state.error === "Forbidden"
+              ? tCommon("errorForbidden")
+              : state.error === "insufficient_stock"
+                ? t("errorInsufficientStock")
+                : state.error === "not_claimable" || state.error === "not_found"
+                  ? tCommon("errorGeneric")
+                  : tCommon("errorValidation")}
+          </Alert>
+        )}
 
-      <FormField label={t("notes")} htmlFor="notes">
-        <Textarea id="notes" name="notes" rows={3} defaultValue={initialValues?.notes} />
-      </FormField>
-
-      {state?.success === false && (
-        <Alert>
-          {state.error === "Forbidden"
-            ? tCommon("errorForbidden")
-            : state.error === "insufficient_stock"
-              ? t("errorInsufficientStock")
-              : state.error === "not_claimable" || state.error === "not_found"
-                ? tCommon("errorGeneric")
-                : tCommon("errorValidation")}
-        </Alert>
-      )}
-
-      <Button type="submit" disabled={pending}>
-        {pending && <Loader2 className="size-4 animate-spin" />}
-        {pending ? t("submitting") : t("submit")}
-      </Button>
-    </form>
+        <Button type="submit" disabled={pending}>
+          {pending && <Loader2 className="size-4 animate-spin" />}
+          {pending ? t("submitting") : t("submit")}
+        </Button>
+      </form>
+    </div>
   );
 }
