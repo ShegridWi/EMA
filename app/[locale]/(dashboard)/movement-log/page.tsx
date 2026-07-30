@@ -47,7 +47,7 @@ export default async function MovementLogPage({ params, searchParams }: Props) {
 
   // Admin-only, no exceptions (03-roles-permissions.md "Movement log" row).
   if (session?.user.role !== "ADMIN") {
-    redirect(`/${locale}`);
+    redirect(`/${locale}/dashboard`);
   }
 
   const page = Math.max(1, Number(pageParam) || 1);

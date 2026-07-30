@@ -11,7 +11,7 @@ import { routing } from "@/i18n/routing";
 
 const handleI18nRouting = createMiddleware(routing);
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/", "/login"];
 
 function stripLocale(pathname: string): { locale: string | null; rest: string } {
   const segments = pathname.split("/").filter(Boolean);
@@ -37,8 +37,12 @@ export default auth((req) => {
     );
   }
 
-  if (req.auth && normalizedRest === "/login") {
-    return NextResponse.redirect(new URL(`/${targetLocale}`, nextUrl.origin));
+  // Signed-in users skip the public landing page and the login form —
+  // both send them straight into the app instead.
+  if (req.auth && (normalizedRest === "/login" || normalizedRest === "/")) {
+    return NextResponse.redirect(
+      new URL(`/${targetLocale}/dashboard`, nextUrl.origin),
+    );
   }
 
   return handleI18nRouting(req);

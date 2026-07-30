@@ -49,7 +49,7 @@ export default async function UsersPage({ params, searchParams }: Props) {
   // Materials/Products where sellers can at least view. Direct visits
   // must still be blocked server-side (CLAUDE.md section 7).
   if (session?.user.role !== "ADMIN") {
-    redirect(`/${locale}`);
+    redirect(`/${locale}/dashboard`);
   }
 
   const isInactiveTab = tab === "inactive";
