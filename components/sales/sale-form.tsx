@@ -4,6 +4,7 @@ import { useActionState, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { createSaleAction } from "@/lib/actions/sales";
+import { convertPedidoAction } from "@/lib/actions/pedidos";
 import { useToast } from "@/components/ui/toast-provider";
 import { City, SaleType, PaymentMethod } from "@/app/generated/prisma/enums";
 import type { SerializedProduct } from "@/lib/inventory";
@@ -21,7 +22,28 @@ type ActionResult =
   | { success: false; error: unknown }
   | null;
 
-export function SaleForm({ products }: { products: SerializedProduct[] }) {
+type PedidoInitialValues = {
+  quantity?: string;
+  customerName?: string;
+  customerPhone?: string;
+  notes?: string;
+};
+
+export function SaleForm({
+  products,
+  pedidoId,
+  initialValues,
+}: {
+  products: SerializedProduct[];
+  // When set, this form converts an existing pedido/cotización (from
+  // the public landing page) into a Sale instead of creating one from
+  // scratch — see lib/pedidos.ts's convertPedidoToSale. A real Product
+  // must still be picked manually below: the pedido's color/size are
+  // landing-page catalog strings with no guaranteed match to a real
+  // Product's free-text color, so there's no auto-selection.
+  pedidoId?: string;
+  initialValues?: PedidoInitialValues;
+}) {
   const t = useTranslations("Sales");
   const tCommon = useTranslations("Common");
   const tCity = useTranslations("City");
@@ -76,6 +98,9 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
       notes: formData.get("notes") || undefined,
     };
 
+    if (pedidoId) {
+      return convertPedidoAction({ pedidoId, saleInput: payload });
+    }
     return createSaleAction(payload);
   }
 
@@ -96,6 +121,8 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
         showToast("error", tCommon("errorForbidden"));
       } else if (state.error === "insufficient_stock") {
         showToast("warning", t("errorInsufficientStock"));
+      } else if (state.error === "not_claimable" || state.error === "not_found") {
+        showToast("error", tCommon("errorGeneric"));
       } else {
         showToast("error", tCommon("errorValidation"));
       }
@@ -196,7 +223,7 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
             step="1"
             min="1"
             required
-            defaultValue={1}
+            defaultValue={initialValues?.quantity ?? 1}
           />
         </FormField>
 
@@ -293,16 +320,16 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label={t("customerName")} htmlFor="customerName">
-          <Input id="customerName" name="customerName" />
+          <Input id="customerName" name="customerName" defaultValue={initialValues?.customerName} />
         </FormField>
 
         <FormField label={t("customerPhone")} htmlFor="customerPhone">
-          <Input id="customerPhone" name="customerPhone" />
+          <Input id="customerPhone" name="customerPhone" defaultValue={initialValues?.customerPhone} />
         </FormField>
       </div>
 
       <FormField label={t("notes")} htmlFor="notes">
-        <Textarea id="notes" name="notes" rows={3} />
+        <Textarea id="notes" name="notes" rows={3} defaultValue={initialValues?.notes} />
       </FormField>
 
       {state?.success === false && (
@@ -311,7 +338,9 @@ export function SaleForm({ products }: { products: SerializedProduct[] }) {
             ? tCommon("errorForbidden")
             : state.error === "insufficient_stock"
               ? t("errorInsufficientStock")
-              : tCommon("errorValidation")}
+              : state.error === "not_claimable" || state.error === "not_found"
+                ? tCommon("errorGeneric")
+                : tCommon("errorValidation")}
         </Alert>
       )}
 

@@ -11,7 +11,7 @@ import { routing } from "@/i18n/routing";
 
 const handleI18nRouting = createMiddleware(routing);
 
-const PUBLIC_PATHS = ["/", "/login"];
+const PUBLIC_PATHS = ["/", "/login", "/pedido", "/pedido/confirmacion"];
 
 function stripLocale(pathname: string): { locale: string | null; rest: string } {
   const segments = pathname.split("/").filter(Boolean);

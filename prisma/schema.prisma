@@ -70,6 +70,31 @@ enum PaymentMethod {
   CASH
 }
 
+// Public landing-page order/quote requests (anonymous submissions, no
+// login). Kept intentionally standalone: no productId FK (the landing
+// configurator's catalog is a hardcoded placeholder, unrelated to the
+// real Product table), city/size/gender stay plain enum values rather
+// than a lookup table. See lib/pedidos.ts.
+enum RequestKind {
+  ORDER
+  QUOTE
+}
+
+// PENDING -> ATTENDED (claimed by a seller) -> CONVERTED (turned into a
+// real Sale). CANCELLED is reachable from PENDING or ATTENDED (spam,
+// unreachable customer, etc). CONVERTED/CANCELLED are terminal.
+enum RequestStatus {
+  PENDING
+  ATTENDED
+  CONVERTED
+  CANCELLED
+}
+
+enum LandingGender {
+  MALE
+  FEMALE
+}
+
 // Phase 9 — dedicated per-product stock ledger, not derived from
 // MovementLog (see 02-data-model.md "ProductStockMovement" for why: a
 // SALE already writes a MovementLog row scoped to the Sale entity, not
@@ -108,6 +133,10 @@ enum MovementAction {
   DELETE_USER
   REACTIVATE_USER
   UPDATE_SETTINGS
+  CLAIM_PEDIDO
+  RELEASE_PEDIDO
+  CONVERT_PEDIDO
+  CANCEL_PEDIDO
 }
 
 model User {
@@ -129,6 +158,7 @@ model User {
   settings               UserSettings?
   stockMovements         ProductStockMovement[]
   materialStockMovements MaterialStockMovement[]
+  claimedPedidos         PublicRequest[]
 }
 
 // Per-user preferences (phase 9) — created on demand with defaults the
@@ -283,4 +313,51 @@ model MovementLog {
   entityId   String
   metadata   Json
   createdAt  DateTime       @default(now())
+}
+
+// Public landing-page order/quote request (see lib/pedidos.ts). Created
+// anonymously — no MovementLog entry at creation (MovementLog.userId is
+// required and there is no acting user for a public submission); audit
+// logging starts at the claim step, where a real seller/admin acts.
+//
+// `model`/`color` stay free-text (landing-hero.tsx's placeholder catalog
+// keys), not enums — that catalog is expected to change without a
+// migration. `convertedSaleId` is deliberately a plain string with no
+// Prisma relation: Sale is money-critical and owned exclusively by
+// lib/inventory.ts, so this table stays free to evolve independently.
+model PublicRequest {
+  id            String        @id @default(uuid())
+  kind          RequestKind
+  status        RequestStatus @default(PENDING)
+
+  customerName  String
+  customerPhone String
+  notes         String
+
+  gender LandingGender
+  model  String
+  color  String
+  size   Size?
+  city   City
+
+  quantity Int?
+
+  estimatedQuantity String?
+  usageContext      String?
+  desiredTimeframe  String?
+  additionalDetails String?
+
+  submissionIp String?
+
+  assignedSellerId String?
+  assignedSeller    User?     @relation(fields: [assignedSellerId], references: [id])
+  assignedAt        DateTime?
+
+  convertedSaleId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, city])
+  @@index([submissionIp, createdAt])
 }

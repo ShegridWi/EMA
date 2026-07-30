@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import {
   BarChart3,
   History,
+  Inbox,
   Package,
   Settings,
   Shirt,
@@ -14,10 +15,13 @@ import {
 // /reports and /movement-log don't exist yet — they're built in later
 // phases (see .prompts/00-README.md). Only the links are wired up here.
 // Both are admin-only per 03-roles-permissions.md, same as /users below.
+// /pedidos is visible to both roles — a seller claims requests from
+// their own city (see lib/pedidos.ts's city scoping), an admin sees all.
 const NAV_LINKS = [
   { href: "/inventory/materials", key: "materials", adminOnly: false, Icon: Package },
   { href: "/inventory/products", key: "products", adminOnly: false, Icon: Shirt },
   { href: "/sales", key: "sales", adminOnly: false, Icon: ShoppingCart },
+  { href: "/pedidos", key: "pedidos", adminOnly: false, Icon: Inbox },
   { href: "/reports", key: "reports", adminOnly: true, Icon: BarChart3 },
   { href: "/users", key: "users", adminOnly: true, Icon: Users },
   { href: "/movement-log", key: "movementLog", adminOnly: true, Icon: History },
