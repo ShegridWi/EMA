@@ -37,6 +37,46 @@ items were requested directly by the business afterward — see
 - Reversible product deactivation + an active/inactive tab, same
   pattern as user deactivation (phase 6).
 
+## Phase 10 — public pedido/cotización requests + admin "Pedidos" section
+
+Also requested directly by the business, independent of phase 9: the
+landing page's quote button used to only build a WhatsApp deep link
+with nothing kept in the system. Now every order/quote request
+submitted from the public landing page (no login) is captured as a
+`PublicRequest` row (`02-data-model.md`) and flows into an internal
+"Pedidos" section where a seller claims it and converts it into a real
+`Sale` — see `01-business-rules.md` section 11 for the full business
+flow and `05-nextjs-conventions.md` for the implementation (anonymous
+Server Action, rate limiting, notification dropdown).
+
+Resolved for this phase:
+
+- **Order vs. quote as one form**: no separate pages/flows — derived
+  from whether a size was picked on the landing configurator, not an
+  explicit choice the visitor makes.
+- **Anti-abuse**: IP-based rate limiting (short burst + daily cap) plus
+  a honeypot field, no paid captcha/Redis service — consistent with
+  CLAUDE.md section 1 (avoid unnecessary recurring costs).
+- **Seller city-scoping for claiming**: confirmed — a seller only sees/
+  claims requests from their own city; an admin sees/manages all
+  cities. See `03-roles-permissions.md`.
+- **Claim model**: first-come, first-served — no dispatch/assignment
+  queue, whoever clicks "atender" first on a pending request gets it.
+- **Notification mechanism**: a header bell with a dropdown list of
+  pending requests, refreshed by a periodic client poll (not
+  websockets/push) — matches the "simple, low-maintenance" project
+  philosophy for a low-traffic internal tool.
+
+Out of scope for this phase (revisit only if the business asks):
+
+- A multi-item cart on the public request form (a seller handles
+  additional models by showing the customer the catalog after
+  claiming).
+- Any paid anti-spam/captcha service.
+- Server-persisted "seen/unseen" notification state — dismissing a
+  notification is a per-browser convenience (`localStorage`), not a
+  database column, so it doesn't survive switching browsers/devices.
+
 ## Out of MVP scope (phase 2 / future)
 
 - Multi-branch beyond the 2 fixed cities (dynamic city/branch catalog).

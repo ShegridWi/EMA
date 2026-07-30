@@ -111,11 +111,16 @@ pieces).
 |---|---|---|
 | id | uuid | |
 | userId | User.id | |
-| action | enum | `LOGIN`, `CREATE_MATERIAL`, `UPDATE_MATERIAL`, `DELETE_MATERIAL`, `CREATE_PRODUCT`, `UPDATE_PRODUCT`, `DELETE_PRODUCT`, `CREATE_SALE`, `CREATE_USER`, etc. |
-| entityType | string | `Material`, `Product`, `Sale`, `User` |
+| action | enum | `LOGIN`, `CREATE_MATERIAL`, `UPDATE_MATERIAL`, `DELETE_MATERIAL`, `CREATE_PRODUCT`, `UPDATE_PRODUCT`, `DELETE_PRODUCT`, `CREATE_SALE`, `CREATE_USER`, `CLAIM_PEDIDO`, `RELEASE_PEDIDO`, `CONVERT_PEDIDO`, `CANCEL_PEDIDO`, etc. |
+| entityType | string | `Material`, `Product`, `Sale`, `User`, `PublicRequest` |
 | entityId | uuid | |
 | metadata | json | relevant values of the change |
 | createdAt | datetime | |
+
+`userId` is a **required** FK — there is no row for the anonymous
+creation of a `PublicRequest` (see below), only for the internal
+claim/release/convert/cancel actions on it, which always have a real
+acting user.
 
 ## ProductStockMovement (phase 9)
 
@@ -149,6 +154,49 @@ A `SET` container row never carries real stock (see the Product design
 note above), so it never gets a `ProductStockMovement` row itself —
 only its pieces do.
 
+## PublicRequest (public pedido/cotización, phase 10)
+
+Captures an anonymous order/quote request submitted from the public
+landing page's product configurator (`01-business-rules.md` section
+11). Deliberately **standalone**: no `productId` FK (the landing
+configurator's gender/model/color/size catalog is a hardcoded
+placeholder, unrelated to the real `Product` table), `city`/`size`
+stay plain enum values rather than a lookup table.
+
+| Field | Type | Notes |
+|---|---|---|
+| id | uuid | |
+| kind | enum(`ORDER`, `QUOTE`) | derived server-side from whether `size` was submitted — never trusts a client-supplied value |
+| status | enum(`PENDING`, `ATTENDED`, `CONVERTED`, `CANCELLED`) | default `PENDING`; see the transition table in `01-business-rules.md` section 11 |
+| customerName | string | required |
+| customerPhone | string | required |
+| notes | string | required — pre-filled with a summary of the landing selections, editable by the customer |
+| gender | enum(`MALE`, `FEMALE`) | landing configurator's gender toggle |
+| model | string | landing configurator's model key (placeholder catalog, not an enum — expected to change without a migration) |
+| color | string | landing configurator's color key (same reasoning as `model`) |
+| size | enum(`XS`..`XXL`)? | **null means this is a QUOTE**, present means ORDER |
+| city | enum(`LA_PAZ`, `SANTA_CRUZ`) | |
+| quantity | int? | ORDER-only — how many of the single item |
+| estimatedQuantity | string? | QUOTE-only, free text/range |
+| usageContext | string? | QUOTE-only — who it's for (clinic/company/personal) |
+| desiredTimeframe | string? | QUOTE-only |
+| additionalDetails | string? | QUOTE-only, open-ended "tell us what you're looking for" |
+| submissionIp | string? | used for rate-limiting anonymous submissions, not displayed to end users |
+| assignedSellerId | User.id? | set when a seller/admin claims it (`status` → `ATTENDED`) |
+| assignedAt | datetime? | |
+| convertedSaleId | Sale.id? | **plain string, not a Prisma relation** — see note below |
+| createdAt / updatedAt | datetime | no `deletedAt`/`active` — `status` (including `CANCELLED`) fully covers this row's lifecycle |
+
+**Why `assignedSellerId` is a real FK but `convertedSaleId` isn't:**
+the "no relations to other tables" rule is about the *public creation
+path* having zero write-time dependencies. Claiming is an internal,
+authenticated action against a `User` that provably exists, so
+`assignedSellerId` gets a real FK (same integrity guarantee `Sale.seller`
+already has). `Sale` is the money-critical entity owned exclusively by
+`lib/inventory.ts`, so `convertedSaleId` stays a plain, unenforced
+string — this table can keep evolving without ever touching a `Sale`
+migration; traceability is preserved via `getSaleById(convertedSaleId)`.
+
 ## Relationships (summary)
 
 - `User` 1—1 `UserSettings`
@@ -160,3 +208,5 @@ only its pieces do.
 - `Product (SET)` 1—N `Product (UNIT)` (set pieces, self-relation)
 - `Product` 1—N `Sale`
 - `User` 1—N `MovementLog`
+- `User` 1—N `PublicRequest` (`assignedSellerId`, nullable — the claiming seller/admin)
+- `PublicRequest` —(unenforced)→ `Sale` via `convertedSaleId` (no Prisma `@relation`, see the `PublicRequest` section above)

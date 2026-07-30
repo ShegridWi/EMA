@@ -41,6 +41,11 @@ so the instruction is always loaded — no duplication needed.
 
 ```
 app/
+  (marketing)/
+    page.tsx                 # public landing page (LandingHero), no login
+    pedido/
+      page.tsx                # public order/quote request form
+      confirmacion/           # full-page "request received" + auto-redirect
   (auth)/
     login/
   (dashboard)/
@@ -48,6 +53,8 @@ app/
       materials/
       products/
     sales/
+    pedidos/                  # admin: claim/convert public requests
+      [id]/
     reports/
     users/
     movement-log/
@@ -56,13 +63,17 @@ app/
       weekly-report/        # protected route hit by an external scheduler
 components/
   ui/                        # generic, presentation-only components
+  pedido/                    # public-form components (pedido-form, image cycler)
+  pedidos/                   # admin-side components (claim/cancel/release actions)
 lib/
   actions/                   # Server Actions, one file per module
   validations/               # Zod schemas, shared by client + server
   db.ts                      # Prisma client singleton
   auth.ts                    # Auth.js config
   audit.ts                   # centralized audit-log writer
-  inventory.ts               # centralized stock-mutation functions
+  inventory.ts               # centralized stock-mutation functions (Material/Product/Sale)
+  pedidos.ts                 # centralized PublicRequest mutation functions
+  landing-catalog.ts         # shared landing gender/model/color/size catalog
 prisma/
   schema.prisma
   migrations/
@@ -201,6 +212,14 @@ export async function createMaterialAction(input: unknown) {
 the `MovementLog` insert in a `prisma.$transaction`. No other code path is
 allowed to touch `Material`/`Product` quantity fields directly.
 
+The same rule applies per-domain to every other centralized mutation
+file — `lib/users.ts` is the only place allowed to call `prisma.user.*`
+mutations, `lib/pedidos.ts` (phase 10) the only place allowed to call
+`prisma.publicRequest.*`, and so on. When adding a new domain, follow
+this same shape: one `lib/<domain>.ts` owning all its Prisma writes,
+one `lib/validations/<domain>.ts` for its Zod schemas, one
+`lib/actions/<domain>.ts` for its Server Actions.
+
 ## Validation
 
 - **Zod** for every Server Action input, and for any form default values
@@ -314,6 +333,92 @@ new paid service just for scheduling.
   separate format-check step to remember).
 - Husky + `lint-staged` are optional, not required for the MVP — add them
   only if lint/format regressions actually start slipping into commits.
+
+## Public (anonymous) Server Actions — pedido/cotización (phase 10)
+
+Every Server Action up to this point starts with `const session = await
+auth()` and rejects if there's no session/role match — see "Server
+Actions" above. `submitPedidoAction` (`lib/actions/pedidos.ts`) is the
+**first exception**: the public landing page's order/quote form has no
+login at all, so there's no session to check. This is intentional, not
+a missed check — the file has a comment calling it out explicitly so it
+doesn't read as an oversight in review.
+
+Since there's no auth boundary, the defense against abuse moves
+elsewhere:
+
+1. **Rate limiting by IP**, inside `createPublicPedido`
+   (`lib/pedidos.ts`), before the insert — no new dependency (no
+   Redis/Upstash, per CLAUDE.md section 1): a short-window count (3
+   submissions / 10 minutes) and a looser daily cap (10 / 24h), both
+   plain `prisma.publicRequest.count()` queries against `submissionIp`
+   inside the same `$transaction` as the eventual insert. The IP itself
+   comes from `headers().get("x-forwarded-for")` (DigitalOcean App
+   Platform's proxy sets this; there's no `NextRequest` object available
+   inside a Server Action to read it from).
+2. **A honeypot field** (`website`, in `lib/validations/pedido.ts` /
+   `components/pedido/pedido-form.tsx`): rendered off-screen
+   (`aria-hidden`, `tabIndex={-1}`), never visible or reachable to a
+   real visitor. If it comes back non-empty, `submitPedidoAction`
+   returns a **fake success** without touching the database at all —
+   the bot doesn't learn its submission was rejected.
+3. **The request's `kind` (ORDER/QUOTE) is never trusted from the
+   client** — `publicPedidoSchema` doesn't even accept the field;
+   `createPublicPedido` derives it server-side from whether `size` is
+   present, so a tampered hidden field can't misclassify a submission.
+
+Everything past the public submission step (claiming, cancelling,
+releasing, converting to a sale) goes through the normal
+session-checked Server Action pattern — only the initial anonymous
+write is special-cased.
+
+## Notification system (pedido bell, phase 10)
+
+The dashboard header's bell (`components/pedido-badge.tsx` +
+`components/pedido-notifications.tsx`) is the first notification
+mechanism in this app. Deliberately simple — no websockets/SSE/push
+service, per CLAUDE.md section 1 — built from three pieces:
+
+1. **Server-rendered initial list**: `components/pedido-badge.tsx` (a
+   Server Component, mounted in `app/[locale]/(dashboard)/layout.tsx`'s
+   header) reads the session and calls `listPedidoNotifications`
+   (`lib/pedidos.ts`) — up to 20 `PENDING` requests, scoped to the
+   viewer's own city unless they're an admin (same scoping rule as
+   claiming, `03-roles-permissions.md`), newest first. This avoids a
+   flash of "no notifications" on first paint.
+2. **Client-side polling for freshness**: `PedidoNotifications`
+   (`components/pedido-notifications.tsx`, a Client Component) takes
+   that initial list as a prop, then every 60 seconds calls
+   `getPedidoNotificationsAction` (`lib/actions/pedidos.ts`) — a normal,
+   session-checked Server Action — and replaces its in-memory list with
+   the fresh result. A request naturally drops off the list the moment
+   anyone claims, cancels, or converts it (the query only ever selects
+   `status: "PENDING"`), so no extra "remove this notification" call is
+   needed for that case.
+3. **Per-browser dismissal via `localStorage`**: clicking a notification
+   navigates to `/pedidos/[id]` (the request's detail page) *and* adds
+   its id to a `Set` persisted at
+   `localStorage["ema:dismissedPedidoNotifications:{userId}"]`. The
+   bell's badge count and dropdown list are always `items.filter(item
+   => !dismissed.has(item.id))` — so a dismissed request disappears
+   from *that person's* bell immediately and stays gone across reloads
+   on that browser, **without changing the request's actual `status`**.
+   It still shows up for every other eligible seller/admin, and for
+   this same user again if they open a different browser/device — this
+   is a convenience marker, not a database column, exactly like the
+   "phase 10 out of scope" note in `04-scope-mvp.md` says. On every poll
+   tick, the dismissed set is pruned down to only the ids still present
+   in the fresh server list (so it can't grow forever once a request is
+   claimed/converted and drops out of the feed for good).
+
+The bell itself renders nothing (`return null`) once the filtered list
+is empty — there's no "0 notifications" empty state to design for.
+
+If a future phase needs true cross-device "seen" state (e.g. a manager
+checking from two computers and expecting dismissals to follow them),
+that would mean adding a persisted per-user "last seen" timestamp or a
+seen-by join table — a deliberate scope decision, not an oversight of
+the current design.
 
 ## Environment variables
 

@@ -22,6 +22,11 @@ Two roles: **Admin** and **Seller**.
 | Settings (phase 9) | Edit own timezone / theme / language | ✅ | ✅ |
 | Inventory — Finished product | Deactivate / reactivate (phase 9) | ❌ | ✅ |
 | Inventory — Finished product | View a product's stock history (phase 9) | ✅ | ✅ |
+| Pedidos (phase 10) | View / claim (atender) pending requests | own city only | all cities |
+| Pedidos (phase 10) | Cancel a request | only if assigned to them | any |
+| Pedidos (phase 10) | Release ("liberar") a claimed request back to pending | ❌ | ✅ |
+| Pedidos (phase 10) | Generate a sale from a claimed request | only if assigned to them | any |
+| Pedidos (phase 10) | See the pending-requests notification bell | own city's count | all cities' count |
 
 ## Implementation notes
 
@@ -31,6 +36,11 @@ Two roles: **Admin** and **Seller**.
 - By default, a seller should only see the sales and inventory of **their
   own city** (to confirm with the business whether a seller can operate in
   both cities or is fixed to one).
+- **Pedidos specifically**: confirmed with the business (unlike the
+  still-open Sales/inventory assumption above) — a seller only sees and
+  can claim/manage requests matching `User.city`; an admin isn't
+  city-restricted for this module. See `01-business-rules.md` section
+  11 and `04-scope-mvp.md`.
 - Consider a third role in the future (`SUPER_ADMIN` or business owner) if
   a distinction is needed between "branch admin" vs. "owner with global
   visibility" — not in the current scope, but the enum-based role model
