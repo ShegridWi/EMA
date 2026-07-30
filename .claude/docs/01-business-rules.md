@@ -168,3 +168,96 @@ delta, why, the related sale if any, and who caused it. Viewable by
 both roles from the product's own row in the Finished product listing
 (same visibility as viewing the product itself) — it's a read-only
 history, no actions.
+
+## 11. Public pedido/cotización requests (landing page)
+
+The public landing page (`/`) lets an anonymous visitor — no login —
+submit an order or quote request from the product configurator
+(gender, model, color, size, city). This used to only build a WhatsApp
+deep link with no record kept anywhere; it's now captured in the system
+as a `PublicRequest` row (`02-data-model.md`) that flows into an
+internal "Pedidos" admin section.
+
+### Order vs. quote
+
+The visitor never explicitly picks a mode — it's derived **server-side**
+from whether a **size** was selected on the landing configurator:
+
+- **Size selected → ORDER** (`kind = ORDER`): a concrete, single-item
+  request. The form additionally asks for a quantity. If the customer
+  wants more than one model, that's handled by a seller showing them
+  the full catalog after claiming the request — this flow doesn't
+  support a multi-item cart.
+- **No size selected → QUOTE** (`kind = QUOTE`): a more open-ended
+  inquiry. The form additionally asks for an approximate quantity
+  needed, who it's for (clinic/company/personal use), a desired
+  timeframe, and a free-text "tell us what you're looking for" field —
+  all optional.
+
+A client-supplied `kind` value is never trusted (see
+`05-nextjs-conventions.md`'s note on `lib/validations/pedido.ts`) —
+trusting it would let a tampered form submission misclassify itself.
+
+### Required vs. optional fields
+
+Customer name, phone, and a description (`notes`) are **always
+required** — validated both client- and server-side. The description
+is **pre-filled** with a summary of the landing selections (e.g. "Pijama
+médico para mujer, modelo Clásico, color Azul marino, talla M.") that
+the customer can freely edit; the form tells them to review/complete it
+since it's what the seller reads to understand the request. The 4
+quote-specific fields above are optional in both directions (the
+customer can leave them blank, and a request with a size still doesn't
+show them at all).
+
+### Anti-abuse (anonymous, no login)
+
+Since this is the first form in the app anyone can submit without an
+account, it's rate-limited by submission IP (a short burst limit and a
+looser daily cap) and protected by a hidden honeypot field — see
+`05-nextjs-conventions.md` for the concrete mechanism. Both were chosen
+specifically to avoid a new paid dependency (CLAUDE.md section 1).
+
+### Status lifecycle
+
+```
+PENDING   -> ATTENDED   (a seller/admin claims it)
+ATTENDED  -> PENDING    (admin releases a mis-claim)
+ATTENDED  -> CONVERTED  (a Sale is generated from it)
+PENDING/ATTENDED -> CANCELLED (spam, unreachable customer, etc.)
+```
+`CONVERTED` and `CANCELLED` are terminal — no code path transitions out
+of either.
+
+### Claiming ("atender")
+
+**First-come, first-served**: any eligible seller can claim a `PENDING`
+request, and whoever clicks first gets it assigned directly to them —
+there's no queue/dispatch step. A seller only sees and can claim
+requests matching **their own city**; an admin sees and can claim/
+manage every city's requests (see `03-roles-permissions.md`). Claiming
+does **not** deduct stock or create any financial record by itself —
+only converting to a sale does.
+
+### Converting to a sale
+
+From a claimed (`ATTENDED`) request, the assigned seller (or an admin)
+generates a real `Sale` — this reuses the exact same sale-creation flow
+and stock-deduction logic as a normal walk-in sale (`lib/inventory.ts`'s
+`createSale`, section 3 above), pre-filled with the request's customer
+name/phone/notes/quantity. **A real product must still be picked from
+the actual catalog** at this step: the request's color/size are strings
+from the landing page's own placeholder catalog, not guaranteed to
+match a real `Product`'s free-text color. Once converted, the request's
+status becomes `CONVERTED` and it's linked to the resulting sale.
+
+### Admin notification
+
+The dashboard header shows a bell with the count of pending requests
+(scoped the same way as claiming — a seller's own city, or every city
+for an admin), with a dropdown listing them by customer/type/city/date.
+Clicking one opens that request's detail page and dismisses it from
+*that person's own* notification list going forward — this is a
+per-browser "already looked at it" marker, not a status change, so the
+request still shows up for every other eligible seller/admin until it's
+actually claimed, converted, or cancelled.
