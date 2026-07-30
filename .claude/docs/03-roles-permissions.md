@@ -27,6 +27,8 @@ Two roles: **Admin** and **Seller**.
 | Pedidos (phase 10) | Release ("liberar") a claimed request back to pending | ❌ | ✅ |
 | Pedidos (phase 10) | Generate a sale from a claimed request | only if assigned to them | any |
 | Pedidos (phase 10) | See the pending-requests notification bell | own city's count | all cities' count |
+| Sales (phase 11) | View a sale's own detail page | own sales only | any sale |
+| Sales (phase 11) | Receive a notification when any sale is registered | ❌ | ✅ |
 
 ## Implementation notes
 

@@ -264,7 +264,14 @@
     "dateTo": "Hasta",
     "createSuccess": "Venta registrada correctamente.",
     "returnSuccess": "Venta marcada como devolución.",
-    "voidSuccess": "Venta anulada correctamente."
+    "voidSuccess": "Venta anulada correctamente.",
+    "detailTitle": "Detalle de la venta",
+    "view": "Ver",
+    "kindLabel": "Tipo de producto",
+    "color": "Color",
+    "size": "Talla",
+    "createdAt": "Fecha y hora",
+    "pedidoSummaryTitle": "Detalle del pedido"
   },
   "RequestKind": {
     "ORDER": "Pedido",
@@ -333,9 +340,11 @@
     "errorAlreadyClaimed": "Este pedido ya fue atendido por otra persona.",
     "claimSuccess": "Pedido asignado correctamente.",
     "cancelSuccess": "Pedido cancelado correctamente.",
-    "releaseSuccess": "Pedido liberado correctamente.",
-    "pendingBadgeLabel": "{count} pedidos pendientes",
-    "notificationsTitle": "Pedidos pendientes"
+    "releaseSuccess": "Pedido liberado correctamente."
+  },
+  "Notifications": {
+    "title": "Notificaciones",
+    "badgeLabel": "{count} notificaciones"
   },
   "Users": {
     "title": "Usuarios",

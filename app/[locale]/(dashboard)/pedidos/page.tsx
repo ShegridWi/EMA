@@ -135,7 +135,8 @@ export default async function PedidosPage({ searchParams }: Props) {
             <tbody>
               {pedidos.map((pedido) => {
                 const modelLabel = tLanding(
-                  MODELS.find((m) => m.key === pedido.model)?.nameKey ?? pedido.model,
+                  MODELS.find((m) => m.key === pedido.model)?.nameKey ??
+                    pedido.model,
                 );
                 const colorLabel = tLanding(pedido.color);
                 const canClaim = isAdmin || pedido.city === session!.user.city;
@@ -173,13 +174,7 @@ export default async function PedidosPage({ searchParams }: Props) {
                           <IconButtonLink
                             href={{
                               pathname: "/sales/new",
-                              query: {
-                                pedidoId: pedido.id,
-                                ...(pedido.quantity ? { quantity: String(pedido.quantity) } : {}),
-                                customerName: pedido.customerName,
-                                customerPhone: pedido.customerPhone,
-                                notes: pedido.notes,
-                              },
+                              query: { pedidoId: pedido.id },
                             }}
                             icon={<ShoppingCart className="size-5" />}
                             label={t("generateSale")}

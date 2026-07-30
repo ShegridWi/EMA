@@ -715,12 +715,69 @@ export function listSales(filters: SaleFilters = {}) {
     },
     // Only the seller's name, never the full User row (passwordHash etc.)
     include: { seller: { select: { name: true } } },
-    orderBy: { saleDate: "desc" },
+    // Most-recently-registered first — `saleDate` is a user-editable
+    // business date (can be backdated for an order/reservation) with no
+    // time component, so it doesn't reliably reflect entry order and
+    // leaves same-day ties unordered. `createdAt` is monotonic and
+    // always precise to the second.
+    orderBy: { createdAt: "desc" },
   });
 }
 
 export function getSaleById(id: string) {
   return prisma.sale.findFirst({ where: { id, deletedAt: null } });
+}
+
+export type SaleDetail = {
+  sale: Sale & { seller: { name: string } };
+  // Present only when the sale was returned/voided — same info
+  // listReversedSales already surfaces for the "Anulaciones" tab, just
+  // for a single sale here. `null` for an active sale.
+  reversal: {
+    action: Extract<MovementAction, "RETURN_SALE" | "VOID_SALE">;
+    reason: string | null;
+    performedBy: string;
+    reversedAt: Date;
+  } | null;
+};
+
+/**
+ * Full detail for a single sale's own page — unlike `getSaleById`, this
+ * intentionally does **not** filter by `deletedAt`: a sale's detail page
+ * (linked from both the active and "Anulaciones" tables, and from a
+ * converted pedido) must still resolve for a returned/voided sale, with
+ * the reversal's reason/who/when attached.
+ */
+export async function getSaleDetail(id: string): Promise<SaleDetail | null> {
+  const sale = await prisma.sale.findUnique({
+    where: { id },
+    include: { seller: { select: { name: true } } },
+  });
+  if (!sale) return null;
+
+  let reversal: SaleDetail["reversal"] = null;
+  if (sale.deletedAt) {
+    const log = await prisma.movementLog.findFirst({
+      where: {
+        entityType: "Sale",
+        entityId: id,
+        action: { in: ["RETURN_SALE", "VOID_SALE"] },
+      },
+      include: { user: { select: { name: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+    if (log) {
+      const metadata = log.metadata as Record<string, unknown>;
+      reversal = {
+        action: log.action as Extract<MovementAction, "RETURN_SALE" | "VOID_SALE">,
+        reason: typeof metadata.reason === "string" ? metadata.reason : null,
+        performedBy: log.user.name,
+        reversedAt: log.createdAt,
+      };
+    }
+  }
+
+  return { sale, reversal };
 }
 
 /**
@@ -1036,6 +1093,41 @@ export async function listReversedSales(
   }
 
   return results;
+}
+
+export type SaleNotification = {
+  id: string;
+  description: string;
+  city: City;
+  totalPrice: string;
+  sellerName: string;
+  createdAt: Date;
+};
+
+// Capped list (not a count) for the admin header's notification
+// dropdown — see lib/notifications.ts, which merges this with pending
+// pedido notifications. Admin-only by convention of the caller (every
+// seller's sale is visible to every admin, for oversight); there's no
+// "already seen" column here — which ones an admin has already looked
+// at is tracked client-side, same as pedido notifications.
+const SALE_NOTIFICATIONS_LIMIT = 20;
+
+export async function listRecentSaleNotifications(): Promise<SaleNotification[]> {
+  const sales = await prisma.sale.findMany({
+    where: { deletedAt: null },
+    orderBy: { createdAt: "desc" },
+    take: SALE_NOTIFICATIONS_LIMIT,
+    include: { seller: { select: { name: true } } },
+  });
+
+  return sales.map((sale) => ({
+    id: sale.id,
+    description: sale.description,
+    city: sale.city,
+    totalPrice: sale.totalPrice.toString(),
+    sellerName: sale.seller.name,
+    createdAt: sale.createdAt,
+  }));
 }
 
 // ---------------------------------------------------------------------

@@ -15,7 +15,6 @@ import {
   releasePedido,
   cancelPedido,
   convertPedidoToSale,
-  listPedidoNotifications,
   RateLimitedError,
   PedidoAlreadyClaimedError,
   PedidoNotClaimableError,
@@ -166,15 +165,4 @@ export async function convertPedidoAction(input: unknown) {
     }
     throw error;
   }
-}
-
-export async function getPedidoNotificationsAction() {
-  const session = await auth();
-  if (!session) {
-    return { success: false as const, error: "Forbidden" };
-  }
-
-  const isAdmin = session.user.role === "ADMIN";
-  const items = await listPedidoNotifications(isAdmin ? undefined : session.user.city);
-  return { success: true as const, data: { items } };
 }

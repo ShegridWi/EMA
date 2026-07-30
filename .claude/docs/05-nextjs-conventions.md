@@ -53,6 +53,7 @@ app/
       materials/
       products/
     sales/
+      [id]/                   # sale detail page (phase 11)
     pedidos/                  # admin: claim/convert public requests
       [id]/
     reports/
@@ -65,6 +66,8 @@ components/
   ui/                        # generic, presentation-only components
   pedido/                    # public-form components (pedido-form, image cycler)
   pedidos/                   # admin-side components (claim/cancel/release actions)
+  notification-badge.tsx     # server: fetches the combined notification feed
+  notification-bell.tsx      # client: dropdown + polling + localStorage dismissal
 lib/
   actions/                   # Server Actions, one file per module
   validations/               # Zod schemas, shared by client + server
@@ -74,6 +77,7 @@ lib/
   inventory.ts               # centralized stock-mutation functions (Material/Product/Sale)
   pedidos.ts                 # centralized PublicRequest mutation functions
   landing-catalog.ts         # shared landing gender/model/color/size catalog
+  notifications.ts           # combines pedido + sale notifications into one feed (phase 11)
 prisma/
   schema.prisma
   migrations/
@@ -372,44 +376,79 @@ releasing, converting to a sale) goes through the normal
 session-checked Server Action pattern — only the initial anonymous
 write is special-cased.
 
-## Notification system (pedido bell, phase 10)
+## Notification system (header bell, phases 10-11)
 
-The dashboard header's bell (`components/pedido-badge.tsx` +
-`components/pedido-notifications.tsx`) is the first notification
+The dashboard header's bell (`components/notification-badge.tsx` +
+`components/notification-bell.tsx`) is the first notification
 mechanism in this app. Deliberately simple — no websockets/SSE/push
-service, per CLAUDE.md section 1 — built from three pieces:
+service, per CLAUDE.md section 1. It shows a single, combined feed of
+two unrelated event types (pending pedido/cotización requests, and
+newly-registered sales for admins) rather than one bell per feature —
+see `04-scope-mvp.md` phase 11 for why that was a deliberate choice, not
+a shortcut.
 
-1. **Server-rendered initial list**: `components/pedido-badge.tsx` (a
-   Server Component, mounted in `app/[locale]/(dashboard)/layout.tsx`'s
-   header) reads the session and calls `listPedidoNotifications`
-   (`lib/pedidos.ts`) — up to 20 `PENDING` requests, scoped to the
-   viewer's own city unless they're an admin (same scoping rule as
-   claiming, `03-roles-permissions.md`), newest first. This avoids a
-   flash of "no notifications" on first paint.
-2. **Client-side polling for freshness**: `PedidoNotifications`
-   (`components/pedido-notifications.tsx`, a Client Component) takes
-   that initial list as a prop, then every 60 seconds calls
-   `getPedidoNotificationsAction` (`lib/actions/pedidos.ts`) — a normal,
+**Composing multiple sources into one feed** (`lib/notifications.ts`):
+`listNotificationsForSession(role, city)` is the single place that
+knows about every notification source. It calls each domain's own
+read function — `listPedidoNotifications` (`lib/pedidos.ts`, capped at
+20, city-scoped unless admin) and, admin-only,
+`listRecentSaleNotifications` (`lib/inventory.ts`, capped at 20, every
+city) — and maps each into the same shape:
+
+```ts
+type NotificationItem = {
+  id: string;        // "pedido:<uuid>" or "sale:<uuid>" — namespaced so
+                      // the two domains' ids can never collide
+  kind: "pedido" | "sale";
+  href: string;       // "/pedidos/<id>" or "/sales/<id>"
+  title: string;
+  subtitle: string;
+  createdAt: Date;
+};
+```
+
+Both `title`/`subtitle` are **already translated server-side** (via
+`getTranslations`, since this function itself runs in a Server
+Component or a Server Action, never in the browser) — the client
+component never imports `RequestKind`/`City` or calls `useTranslations`
+for domain-specific labels, it just renders plain strings. This is what
+lets the bell stay a single generic component instead of growing a
+per-kind rendering branch for every future notification source; adding
+a third source later means adding one more mapped array in
+`lib/notifications.ts`, not touching the bell itself. The merged list
+is sorted by `createdAt` descending across both sources before
+rendering.
+
+The bell itself is built from three pieces:
+
+1. **Server-rendered initial list**: `components/notification-badge.tsx`
+   (a Server Component, mounted in `app/[locale]/(dashboard)/layout.tsx`'s
+   header) reads the session and calls `listNotificationsForSession`.
+   This avoids a flash of "no notifications" on first paint.
+2. **Client-side polling for freshness**: `NotificationBell`
+   (`components/notification-bell.tsx`, a Client Component) takes that
+   initial list as a prop, then every 60 seconds calls
+   `getNotificationsAction` (`lib/actions/notifications.ts`) — a normal,
    session-checked Server Action — and replaces its in-memory list with
-   the fresh result. A request naturally drops off the list the moment
-   anyone claims, cancels, or converts it (the query only ever selects
-   `status: "PENDING"`), so no extra "remove this notification" call is
-   needed for that case.
+   the fresh result. A pedido naturally drops off the moment anyone
+   claims/cancels/converts it (its source query only ever selects
+   `status: "PENDING"`); a sale notification drops off once it falls out
+   of the most-recent-20 window. Neither needs an explicit "remove this
+   notification" call for that case.
 3. **Per-browser dismissal via `localStorage`**: clicking a notification
-   navigates to `/pedidos/[id]` (the request's detail page) *and* adds
-   its id to a `Set` persisted at
-   `localStorage["ema:dismissedPedidoNotifications:{userId}"]`. The
-   bell's badge count and dropdown list are always `items.filter(item
-   => !dismissed.has(item.id))` — so a dismissed request disappears
-   from *that person's* bell immediately and stays gone across reloads
-   on that browser, **without changing the request's actual `status`**.
-   It still shows up for every other eligible seller/admin, and for
-   this same user again if they open a different browser/device — this
-   is a convenience marker, not a database column, exactly like the
-   "phase 10 out of scope" note in `04-scope-mvp.md` says. On every poll
-   tick, the dismissed set is pruned down to only the ids still present
-   in the fresh server list (so it can't grow forever once a request is
-   claimed/converted and drops out of the feed for good).
+   navigates to `item.href` *and* adds its (namespaced) id to a `Set`
+   persisted at `localStorage["ema:dismissedNotifications:{userId}"]`.
+   The bell's badge count and dropdown list are always `items.filter(item
+   => !dismissed.has(item.id))` — so a dismissed item disappears from
+   *that person's* bell immediately and stays gone across reloads on
+   that browser, **without changing anything about the underlying
+   pedido or sale**. It still shows up for every other eligible
+   seller/admin, and for this same user again if they open a different
+   browser/device — this is a convenience marker, not a database
+   column, exactly like the "phase 10 out of scope" note in
+   `04-scope-mvp.md` says. On every poll tick, the dismissed set is
+   pruned down to only the ids still present in the fresh server list
+   (so it can't grow forever).
 
 The bell itself renders nothing (`return null`) once the filtered list
 is empty — there's no "0 notifications" empty state to design for.

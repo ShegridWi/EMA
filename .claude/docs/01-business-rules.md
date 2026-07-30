@@ -97,6 +97,17 @@ same concept under different names) — see the resolved assumption in
 A sale that was already returned or voided can't be reversed again
 (the deduction was already restored once).
 
+### Sale detail page (phase 11)
+
+Every sale has its own page (`/sales/[id]`) with every field — product,
+color/size, quantity, prices, city, dates, seller, payment info,
+customer name/phone, notes — plus the reversal info (who/when/why) if
+it was returned or voided. Reachable from a "Ver" (view) button on both
+the active and cancelled sales tables (both roles). A seller can only
+open their own sales' detail page (same scoping as the list itself); an
+admin can open any. The return/void actions also live here for an
+active sale, admin-only, same as the list.
+
 ## 4. Cities
 
 For now the system only handles two cities as a fixed catalog:
@@ -260,4 +271,19 @@ Clicking one opens that request's detail page and dismisses it from
 *that person's own* notification list going forward — this is a
 per-browser "already looked at it" marker, not a status change, so the
 request still shows up for every other eligible seller/admin until it's
-actually claimed, converted, or cancelled.
+actually claimed, converted, or cancelled. As of phase 11, this same
+bell also carries new-sale notifications — see section 12.
+
+## 12. Sale notifications (phase 11)
+
+Whenever **any** seller registers a sale, **every admin** gets it in the
+same header notification bell described above (a shared, combined
+dropdown — not a second bell), so admins have visibility into sales
+activity across every seller without having to check the sales list
+proactively. Sellers do **not** get notified of their own (or anyone
+else's) sales — this is admin-oversight only, unlike pedido
+notifications, which sellers act on directly. Clicking a sale
+notification opens that sale's detail page (section 3 above) and
+dismisses it from that admin's own list, same per-browser mechanic as
+pedido notifications — it doesn't change anything about the sale
+itself, and it doesn't affect what other admins see.

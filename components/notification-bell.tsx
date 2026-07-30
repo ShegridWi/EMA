@@ -3,32 +3,32 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { Bell } from "lucide-react";
-import { getPedidoNotificationsAction } from "@/lib/actions/pedidos";
-import type { City, RequestKind } from "@/app/generated/prisma/enums";
-
-export type PedidoNotificationItem = {
-  id: string;
-  kind: RequestKind;
-  customerName: string;
-  city: City;
-  createdAt: Date | string;
-};
+import { Bell, Inbox, ShoppingCart } from "lucide-react";
+import { getNotificationsAction } from "@/lib/actions/notifications";
+import type { NotificationItem } from "@/lib/notifications";
 
 // Periodic light-weight poll, not websockets/SSE — matches this app's
 // "simple, low-maintenance" philosophy (CLAUDE.md section 1) for a
-// low-traffic internal tool.
+// low-traffic internal tool. `initialItems` comes from the server render
+// (components/notification-badge.tsx) so the bell never flashes empty
+// on first paint.
 const POLL_INTERVAL_MS = 60_000;
 
+const KIND_ICON = {
+  pedido: Inbox,
+  sale: ShoppingCart,
+} as const;
+
 function dismissedStorageKey(userId: string) {
-  return `ema:dismissedPedidoNotifications:${userId}`;
+  return `ema:dismissedNotifications:${userId}`;
 }
 
-// A dismissed pedido is a per-browser "I've already looked at this"
-// marker, not a status change — the pedido itself stays PENDING and
-// still shows up for every other eligible seller/admin. Read/write
-// wrapped in try/catch since localStorage can throw (private browsing,
-// storage disabled).
+// A dismissed notification is a per-browser "I've already looked at
+// this" marker, not a status change — a pending pedido stays visible to
+// every other eligible seller/admin, and a sale notification stays
+// visible to every other admin, regardless of what one person already
+// dismissed. Read/write wrapped in try/catch since localStorage can
+// throw (private browsing, storage disabled).
 function loadDismissed(userId: string): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
@@ -47,20 +47,14 @@ function saveDismissed(userId: string, ids: Set<string>) {
   }
 }
 
-// Server-rendered `initialItems` (components/pedido-badge.tsx) avoids a
-// flash of "no notifications" on first paint; this component then keeps
-// the list fresh via a periodic poll and layers the per-browser
-// dismissed-state filter on top.
-export function PedidoNotifications({
+export function NotificationBell({
   userId,
   initialItems,
 }: {
   userId: string;
-  initialItems: PedidoNotificationItem[];
+  initialItems: NotificationItem[];
 }) {
-  const t = useTranslations("Pedidos");
-  const tRequestKind = useTranslations("RequestKind");
-  const tCity = useTranslations("City");
+  const t = useTranslations("Notifications");
   const locale = useLocale();
   const router = useRouter();
 
@@ -71,12 +65,11 @@ export function PedidoNotifications({
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      const result = await getPedidoNotificationsAction();
+      const result = await getNotificationsAction();
       if (!result.success) return;
       setItems(result.data.items);
-      // Prune dismissed ids that dropped out of the live list (claimed,
-      // cancelled, or converted elsewhere) so this set doesn't grow
-      // forever.
+      // Prune dismissed ids that dropped out of the live list so this
+      // set doesn't grow forever.
       setDismissed((current) => {
         const next = new Set(
           [...current].filter((id) => result.data.items.some((item) => item.id === id)),
@@ -110,20 +103,20 @@ export function PedidoNotifications({
 
   const visibleItems = items.filter((item) => !dismissed.has(item.id));
 
-  function handleSelect(id: string) {
+  function handleSelect(item: NotificationItem) {
     setDismissed((current) => {
       const next = new Set(current);
-      next.add(id);
+      next.add(item.id);
       saveDismissed(userId, next);
       return next;
     });
     setOpen(false);
-    router.push(`/pedidos/${id}`);
+    router.push(item.href);
   }
 
   if (visibleItems.length === 0) return null;
 
-  const label = t("pendingBadgeLabel", { count: visibleItems.length });
+  const label = t("badgeLabel", { count: visibleItems.length });
 
   return (
     <div className="relative" ref={containerRef}>
@@ -148,28 +141,34 @@ export function PedidoNotifications({
           className="absolute right-0 z-50 mt-2 w-80 max-w-[90vw] rounded-md border border-border bg-background shadow-lg"
         >
           <p className="border-b border-border px-4 py-2 text-sm font-semibold">
-            {t("notificationsTitle")}
+            {t("title")}
           </p>
           <ul className="max-h-80 divide-y divide-border overflow-y-auto">
-            {visibleItems.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => handleSelect(item.id)}
-                  className="flex w-full cursor-pointer flex-col gap-0.5 px-4 py-2.5 text-left text-sm transition-colors duration-200 ease-in-out hover:bg-muted"
-                >
-                  <span className="font-medium">{item.customerName}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {tRequestKind(item.kind)} · {tCity(item.city)} ·{" "}
-                    {new Intl.DateTimeFormat(locale, {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    }).format(new Date(item.createdAt))}
-                  </span>
-                </button>
-              </li>
-            ))}
+            {visibleItems.map((item) => {
+              const Icon = KIND_ICON[item.kind];
+              return (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => handleSelect(item)}
+                    className="flex w-full cursor-pointer items-start gap-2.5 px-4 py-2.5 text-left text-sm transition-colors duration-200 ease-in-out hover:bg-muted"
+                  >
+                    <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="truncate font-medium">{item.title}</span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {item.subtitle} ·{" "}
+                        {new Intl.DateTimeFormat(locale, {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        }).format(new Date(item.createdAt))}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

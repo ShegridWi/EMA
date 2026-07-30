@@ -36,15 +36,22 @@ export default async function PedidoDetailPage({ params }: Props) {
   const tSize = await getTranslations("Size");
   const tLanding = await getTranslations("Landing");
 
-  const modelLabel = tLanding(MODELS.find((m) => m.key === pedido.model)?.nameKey ?? pedido.model);
+  const modelLabel = tLanding(
+    MODELS.find((m) => m.key === pedido.model)?.nameKey ?? pedido.model,
+  );
   const colorLabel = tLanding(pedido.color);
-  const genderLabel = tLanding(pedido.gender === "MALE" ? "genderMale" : "genderFemale");
+  const genderLabel = tLanding(
+    pedido.gender === "MALE" ? "genderMale" : "genderFemale",
+  );
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t("detailTitle")}</h1>
-        <Link href="/pedidos" className="text-sm text-muted-foreground hover:text-foreground">
+        <Link
+          href="/pedidos"
+          className="text-sm text-muted-foreground hover:text-foreground"
+        >
           {t("backToList")}
         </Link>
       </div>
@@ -63,19 +70,30 @@ export default async function PedidoDetailPage({ params }: Props) {
           <Field label={t("quantity")} value={String(pedido.quantity)} />
         )}
         {pedido.estimatedQuantity && (
-          <Field label={t("quoteEstimatedQuantity")} value={pedido.estimatedQuantity} />
+          <Field
+            label={t("quoteEstimatedQuantity")}
+            value={pedido.estimatedQuantity}
+          />
         )}
         {pedido.usageContext && (
           <Field label={t("quoteUsageContext")} value={pedido.usageContext} />
         )}
         {pedido.desiredTimeframe && (
-          <Field label={t("quoteDesiredTimeframe")} value={pedido.desiredTimeframe} />
+          <Field
+            label={t("quoteDesiredTimeframe")}
+            value={pedido.desiredTimeframe}
+          />
         )}
         {pedido.additionalDetails && (
-          <Field label={t("quoteAdditionalDetails")} value={pedido.additionalDetails} />
+          <Field
+            label={t("quoteAdditionalDetails")}
+            value={pedido.additionalDetails}
+          />
         )}
         <div className="col-span-full flex flex-col gap-1">
-          <dt className="text-sm font-medium text-muted-foreground">{t("notes")}</dt>
+          <dt className="text-sm font-medium text-muted-foreground">
+            {t("notes")}
+          </dt>
           <dd className="text-sm whitespace-pre-wrap">{pedido.notes}</dd>
         </div>
         <Field
@@ -87,7 +105,10 @@ export default async function PedidoDetailPage({ params }: Props) {
       {convertedSale && (
         <MutedText>
           {t("convertedSaleLinkPrefix")}{" "}
-          <Link href="/sales" className="underline hover:text-foreground">
+          <Link
+            href={`/sales/${convertedSale.id}`}
+            className="underline hover:text-foreground"
+          >
             {t("convertedSaleLink")}
           </Link>
         </MutedText>
@@ -105,13 +126,7 @@ export default async function PedidoDetailPage({ params }: Props) {
           <ButtonLink
             href={{
               pathname: "/sales/new",
-              query: {
-                pedidoId: pedido.id,
-                ...(pedido.quantity ? { quantity: String(pedido.quantity) } : {}),
-                customerName: pedido.customerName,
-                customerPhone: pedido.customerPhone,
-                notes: pedido.notes,
-              },
+              query: { pedidoId: pedido.id },
             }}
           >
             {t("generateSale")}
